@@ -1,0 +1,25 @@
+clear all;
+close all;
+
+addpath(genpath('utils'));
+
+label = '_1213';
+outDir = ['output',filesep,'test_CompareModel2Bench',label,filesep];
+mkdir(outDir);
+
+Nact = 12;
+
+hcstt_Initialize()
+
+%Create the u matrix of actuator heights in nm
+u_mat = zeros(Nact,Nact);
+u_mat(1,1) = 1;
+
+%Update the DM shape
+hcstt_UpdateMultiDM(hV)
+
+%Take image with the camera
+im_cam = hcstt_TakeCamImage();
+
+    
+plotCamImage(im_cam, [outdir,'CamImage'], info );
