@@ -10,7 +10,7 @@ addpath(genpath('utils'),genpath('export_scripts'));
 
 hcstt_Initialize(false);
 
-tint = 10; % exposure time
+tint = 30; % exposure time
 info.tint = tint;
 sidepix = 20; %side pixels to plot when cropping the images
 
@@ -56,7 +56,7 @@ info.lam_arr = lam_arr;
 info.numOfWavelengths = numOfWavelengths;
 info.useApodizer = false;
 info.useGPU = false; 
-info.FPM = exp(1i*8*THETA);
+info.FPM = exp(1i*4*THETA);
 info.outDir = outDir;
 info.xvals = xvals;
 info.yvals = yvals;
@@ -69,7 +69,7 @@ wfin_noerrors = complex(ones(N, N), zeros(N, N)) ;
 wfin_noerrors(RHO > apRad) = 0;
 
 % Define position of DH
-x_fib_pix = +13;
+x_fib_pix = -13;
 % x_fib=3.5;
 % y_fib=0;
 % info.x_fib = x_fib;
@@ -101,7 +101,7 @@ hcstt_NewFlatForDM('ImageSharpeningModel_0801_flatv2');
 
 % Find Center of camera image
 im_cam = zeros(400,400);
-tint_findCenter = 0.3;
+tint_findCenter = 1;
 for II=1:10
     im_camII = hcstt_TakeCamImage(true,false,tint_findCenter);
     im_cam = im_cam + im_camII/55;
@@ -115,6 +115,7 @@ info.x_cent_cam = x_cent_cam;
 info.y_cent_cam = y_cent_cam;
 if max(im_camII(:))>240
     disp('Find Center image saturated')
+    hcstt_DisconnectDevices
     return
 end
 
@@ -211,11 +212,11 @@ one_it = true; % are we trying just once, or doing a parameter search?
 if(one_it)
     load('BenchModelNormalization_0803') % load  the normalization parameters
     normPower = normPower_normalization*tint/tint_normalization;%0.00055;%
-%     normPower = normPower/5;
+    normPower = 1e-4;
     info.normPower = normPower;
     wf2_current = wf2_current0 * sqrt(normPower);
 
-    info.p2v_dm_sensing = 4; % Size of poke for the sensing
+    info.p2v_dm_sensing = 3; % Size of poke for the sensing
 
     Eab =  EFSensing_RegularEFC_labTest(wf2_current,zeros(Nact^2,1),info);
     x_hatRe = Eab(1,:);
@@ -253,16 +254,18 @@ else
     numtry = 5;
     x_hatRe = zeros(numtry,num_Q);
     x_hatIm = zeros(numtry,num_Q);
-    p2v_arr = linspace(1,100,numtry);
-    normPower_arr = linspace(0.0005,0.001,numtry);
+    p2v_arr = linspace(2,15,numtry);
+    normPower_arr = linspace(0.000005,0.00001,numtry);
     for k = 1:numtry
+        load('BenchModelNormalization_0803') % load  the normalization parameters
+        normPower = normPower_normalization*tint/tint_normalization;%0.00055;%
 
         fprintf('Iteration: %d ',k);
 
 %         info.p2v_dm_sensing = p2v_arr(k);
-        info.p2v_dm_sensing = 9;
-        normPower = normPower_arr(k);
-%         normPower =  0.00017;
+        info.p2v_dm_sensing = 3;
+%         normPower = normPower_arr(k);
+        normPower =  1e-5;
         info.normPower = normPower;
     %     info.normPower = 43;
         wf2_current = wf2_current0 * sqrt(normPower);

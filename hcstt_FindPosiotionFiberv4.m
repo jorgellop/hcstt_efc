@@ -11,7 +11,7 @@ function [actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(actxc_est,ang_est)
 num_actxc = 7;
 num_ang = 7;
 actxc_arr = linspace(actxc_est-0.075,actxc_est+0.075,num_actxc);
-ang_arr = linspace(ang_est-0.125,ang_est+0.125,num_ang);
+ang_arr = linspace(ang_est-0.105,ang_est+0.105,num_ang);
 
 % Initialize outputs
 fiber_qx = [0 0];
@@ -26,7 +26,7 @@ for II=1:num_actxc
     for JJ=1:num_ang
         ang = ang_arr(JJ);
         for KK=1:3
-            DM_Command = hcstt_DMMapSin(6,ang,actxc,ph_arr(KK));
+            DM_Command = hcstt_DMMapSin(30,ang,actxc,ph_arr(KK));
     %         amp_max = DE_supMinimizer_3(par0);
             amp_max = hcstt_GetIntensityFIU(DM_Command,3);
             mat(II,JJ) = mat(II,JJ)+amp_max;
@@ -42,6 +42,8 @@ end
 
 figure(1000)
 imagesc(mat)
+set(gca, 'XTickLabel', ang_arr)
+set(gca, 'YTickLabel', actxc_arr)
 axis image
 colorbar
 

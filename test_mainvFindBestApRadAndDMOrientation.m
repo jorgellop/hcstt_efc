@@ -9,11 +9,11 @@ clear all;
 close all;
 addpath(genpath('utils'),genpath('export_scripts'));
 
-use_fiber = false;
-normal_EFC = true;
+use_fiber = true;
+normal_EFC = false;
 debug = true;
 
-label = '_Aug12';
+label = '_Fiber_8config_Aug28';
 outDir = ['output',filesep,'EFC_wFiber_LabDemonstration',label,filesep];
 mkdir(outDir);
 
@@ -32,10 +32,10 @@ N = 2^10;
 [X,Y] = meshgrid(-N/2:N/2-1); 
 xvals = X(1,:);yvals = Y(:,1);
 [THETA,RHO] = cart2pol(X,Y);
-tint = 25;
+tint = 10;
 
 
-lambda0 = 650e-9;
+lambda0 = 635e-9;
 numOfWavelengths = 1; % monochromatic, use 1
 percentBW = 10; % percent bandwidth=(Delta lambda)/lambda*100
 BW = percentBW/100; % bandwidth 
@@ -56,7 +56,7 @@ info.lam_arr = lam_arr;
 info.numOfWavelengths = numOfWavelengths;
 info.useApodizer = false;
 info.useGPU = false; 
-info.FPM = exp(1i*8*THETA);
+info.FPM = exp(1i*4*THETA);
 info.outDir = outDir;
 info.xvals = xvals;
 info.yvals = yvals;
@@ -70,25 +70,28 @@ info.LPM = ones(N,N);
 % normalization factor
 % [normPower,totalPower,x_fib,y_fib] = hcstt_NormalizationFactor(wfin_noerrors,info,'');
 % [normPower,totalPower,x_fib,y_fib] = hcstt_NormalizationFactor(wfin_noerrors,info,'set',8.8e-7,218,204,206,204);
-load('BenchModelNormalization_0803')
-normPower = normPower_normalization*tint/tint_normalization;%0.00055;%
-peakInt = peakInt_normalization*tint/tint_normalization;
-totalPower = 1.16e-6;
 if use_fiber
+    totalPower = 1.7867e-06;
     normPower = totalPower/3.8185e10;
     peakInt = totalPower;
+else
+    load('BenchModelNormalization_0803')
+    normPower = normPower_normalization*tint/tint_normalization;%0.00055;%
+    normPower = 9e-5;
+    peakInt = peakInt_normalization*tint/tint_normalization;
+%     totalPower = 1.6e-6;
 end
-x_fib=3.5;
+x_fib=2.50;
 y_fib=0;
-x_fib_pix = -11;
+x_fib_pix = -13;
 info.x_fib_pix = x_fib_pix;
 info.y_fib_pix = 0;
 info.x_fib = x_fib;
 info.y_fib = y_fib;
 if normal_EFC
-    info.p2v_dm_sensing = 2;
+    info.p2v_dm_sensing = 4;
 else
-    info.p2v_dm_sensing = 10;
+    info.p2v_dm_sensing = 7;
 end
 
 info.normPower = normPower;
@@ -119,23 +122,25 @@ hcstt_NewFlatForDM('ImageSharpeningModel_0801_flatv2');
 % hcstt_NewFlatForDM('output\NewFlat_testPReviousEFCRun');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 
+% Find Center of camera image
+im_cam = zeros(400,400);
+tint_findCenter = 0.5;
+for II=1:25
+    im_camII = hcstt_TakeCamImage(true,false,tint_findCenter);
+    im_cam = im_cam + im_camII/25;
+    pause(0.1)
+end
+im_camaux = im_cam;
+im_camaux(190:210,190:210) = im_camaux(190:210,190:210)*1000;
+[ma,ind_ma] = max(im_camaux(:));
+[x_cent_cam,y_cent_cam] = ind2sub(size(im_camaux),ind_ma);
+if max(im_camII(:))>240
+    disp('Find Center image saturated')
+    hcstt_DisconnectDevices
+    return
+end
+
 if normal_EFC    
-    % Find Center of camera image
-    im_cam = zeros(400,400);
-    tint_findCenter = 0.3;
-    for II=1:25
-        im_camII = hcstt_TakeCamImage(true,false,tint_findCenter);
-        im_cam = im_cam + im_camII/25;
-        pause(0.1)
-    end
-    im_camaux = im_cam;
-    im_camaux(190:210,190:210) = im_camaux(190:210,190:210)*1000;
-    [ma,ind_ma] = max(im_camaux(:));
-    [x_cent_cam,y_cent_cam] = ind2sub(size(im_camaux),ind_ma);
-    if max(im_camII(:))>240
-        disp('Find Center image saturated')
-        return
-    end
 
     % Save image of flat DM without SN
     im_cam = hcstt_TakeCamImage(true,false,tint)-background;
@@ -154,7 +159,7 @@ if normal_EFC
     Q = and(Q, Ycam <= (q_pix) );
     IWA_pix = (x_fib_pix-q_pix );
     OWA_pix = (x_fib_pix+q_pix );
-    angleDH = pi/12;
+    angleDH = 0;%pi/12;
 %     Q = and(RHOcam >= IWA_pix, RHOcam <= OWA_pix);
 %     Q = and(Q, Xcam > 0);
 %     Q = and(Q, abs(THETAcam) < angleDH); % 60deg keystone about x-axis
@@ -176,13 +181,26 @@ if normal_EFC
     info.num_Q = num_Q;
     
     info.Q4G = Q4G;
-    
-else
-    x_cent_cam = 200;
-    y_cent_cam = 200;
+ end
+
+%Find position of fiber
+if use_fiber
+    [actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(x_fib,0);
+    info.actxc_fib = actxc_fib;
+    info.ang_fib = ang_fib;
+    %Calculate position in pixels
+    if actxc_fib>max(actxcDM_arr) 
+        r_fib_pix = interp1(actxcDM_arr,distPix_meas,actxc_fib,'linear','extrap');
+    elseif actxc_fib<min(actxcDM_arr)
+        disp('Fiber too far away from star!')
+        return;
+    else
+        r_fib_pix = interp1(actxcDM_arr,distPix_meas,actxc_fib);
+    end
+    x_fib_pix = -r_fib_pix*cos(ang_fib);
+    y_fib_pix = -r_fib_pix*sin(ang_fib);
+    % Model of the fiber mode shape
 end
-
-
 
 counttot = 0;
 Nact = 12;  % Number of DM actuators, Nact^2
@@ -198,6 +216,11 @@ for apRII=1:1
 
     fiberDiam = 2*0.71; % Fiber diam. (lambda_0/D)
     fiberDiam_pix = (fiberDiam*lambdaOverD);
+    
+    [THETA_fib,RHO_fib] = cart2pol(X - x_fib_pix ,Y - y_fib_pix);
+    fibermode0 = sqrt(2/(pi*(fiberDiam_pix/2)^2))* ...
+            exp(-(RHO_fib/(fiberDiam_pix/2)).^2);
+    info.fibermode0 = fibermode0;
 
     info.fiberDiam = fiberDiam;
     info.apRad = apRad;
@@ -212,6 +235,7 @@ for apRII=1:1
     for posII=1:8
 
 
+%         [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvBlindSearch(N,apRad,posII);
         [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvFindBestDMOrientation(N,apRad,posII);
         info.posDM_x = posDM_x;
         info.posDM_y = posDM_y;
@@ -229,9 +253,9 @@ for apRII=1:1
         us_total = zeros(Nact^2,1); % Initialize the fractional stroke changes to zero
         poke_amp = 1e-9; % Initialize the poke amplitude
 
-        maxits = 30; % maximum number of EFC iterations allowed
+        maxits = 14; % maximum number of EFC iterations allowed
         Gcount = 0; % counter for number of times G matrix was used
-        Gcountmin = 10; % Minimum number of times to use a G matrix
+        Gcountmin = 6; % Minimum number of times to use a G matrix
         curr_coupl_SMF = 1;
         curr_int = 1e9;
         recalc_G = true; % Initialize the flag to re-calculate the G matrix
@@ -247,13 +271,15 @@ for apRII=1:1
         sz_imcam = size(im_cam);
         info.sz_imcam = sz_imcam;
     %     hcstt_test_plotCamImage(im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20), [outDir,'CamImage_initial_DMconfig',num2str(posII)], [41,41] );
-        [Xcam,Ycam] = meshgrid(-y_cent_cam+1:Ncam-y_cent_cam,-x_cent_cam+1:Ncam-x_cent_cam); 
-        [THETAcam, RHOcam] = cart2pol(Xcam,Ycam);
-        Q = zeros(Ncam,Ncam);
-        Q = and(Xcam >= (x_fib_pix-q_pix ), Xcam <=  (x_fib_pix+q_pix ));
-        Q = and(Q, Ycam >= -(q_pix) );
-        Q = and(Q, Ycam <= (q_pix) );
-        info.Q = Q;
+        if normal_EFC
+            [Xcam,Ycam] = meshgrid(-y_cent_cam+1:Ncam-y_cent_cam,-x_cent_cam+1:Ncam-x_cent_cam); 
+            [THETAcam, RHOcam] = cart2pol(Xcam,Ycam);
+            Q = zeros(Ncam,Ncam);
+            Q = and(Xcam >= (x_fib_pix-q_pix ), Xcam <=  (x_fib_pix+q_pix ));
+            Q = and(Q, Ycam >= -(q_pix) );
+            Q = and(Q, Ycam <= (q_pix) );
+            info.Q = Q;
+        end
         info.x_cent_cam = x_cent_cam;
         info.y_cent_cam = y_cent_cam;
 
@@ -261,56 +287,7 @@ for apRII=1:1
         for k = 1:maxits
             counttot = counttot+1;
             %%%%%%%%%%%%%%
-            %Find Center again just in case it moved...
-            if normal_EFC
-%                 tint_findCenter = 1.1;
-%                 im_cam = zeros(Ncam,Ncam);
-%                 for II=1:25
-%                     im_camII = hcstt_TakeCamImage(true,false,tint_findCenter);
-%                     im_cam = im_cam + im_camII/25;
-%                     pause(0.1)
-%                 end
-%                 im_camaux = im_cam;
-%                 im_camaux(190:210,190:210) = im_camaux(190:210,190:210)*1000;
-%                 [ma,ind_ma] = max(im_camaux(:));
-%                 [x_cent_cam,y_cent_cam] = ind2sub(size(im_camaux),ind_ma);
-% 
-%                 % Recalculate Q with the new center:
-%                 [Xcam,Ycam] = meshgrid(-y_cent_cam+1:Ncam-y_cent_cam,-x_cent_cam+1:Ncam-x_cent_cam); 
-%                 [THETAcam, RHOcam] = cart2pol(Xcam,Ycam);
-%                 Q = zeros(Ncam,Ncam);
-%                 Q = and(Xcam >= (x_fib_pix-q_pix ), Xcam <=  (x_fib_pix+q_pix ));
-%                 Q = and(Q, Ycam >= -(q_pix) );
-%                 Q = and(Q, Ycam <= (q_pix) );
-%                 info.Q = Q;
-            else
-                %Recalculate position of fiber
-%                 [actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(2.4,0);
-                actxc_fib = 2.4;
-                ang_fib = 0;
-                info.actxc_fib = actxc_fib;
-                info.ang_fib = ang_fib;
-                %Save to check drift of optical system
-                actxc_fib_check_arr(counttot) = actxc_fib;
-                ang_fib_check_arr(counttot) = ang_fib;
-                %Recalculate position in pixels
-                if actxc_fib>max(actxcDM_arr) 
-                    r_fib_pix = interp1(actxcDM_arr,distPix_meas,actxc_fib,'linear','extrap');
-                elseif actxc_fib<min(actxcDM_arr)
-                    disp('Fiber too far away from star!')
-                    return;
-                else
-                    r_fib_pix = interp1(actxcDM_arr,distPix_meas,actxc_fib);
-                end
-                x_fib_pix = r_fib_pix*cos(ang_fib);
-                y_fib_pix = r_fib_pix*sin(ang_fib);
-                % Model of the fiber mode shape
-                [THETA_fib,RHO_fib] = cart2pol(X - x_fib_pix ,Y - y_fib_pix);
-                fibermode0 = sqrt(2/(pi*(fiberDiam_pix/2)^2))* ...
-                        exp(-(RHO_fib/(fiberDiam_pix/2)).^2);
-                info.fibermode0 = fibermode0;
 
-            end
     %         IWA_pix = (x_fib_pix-q_pix );
     %         OWA_pix = (x_fib_pix+q_pix );
     %         angleDH = pi/12;
@@ -353,13 +330,13 @@ for apRII=1:1
                             'TickLength',[.02 .02]);
     %         set(gca,'YDir','normal');
     %         set(fig0,'units', 'inches', 'Position', [0 0 5 5])
-            if debug
-                export_fig([info.outDir,'DM1surf_',num2str(k),'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png']);
-            else
+%             if debug
+%                 export_fig([info.outDir,'DM1surf_',num2str(k),'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png']);
+%             else
                 if k == maxits
                     export_fig([info.outDir,'DM1surf_final_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png']);
                 end
-            end
+%             end
     %         close(fig0);    
 
             % Simualte WF in image plane with current DM shape, this is needed for the WF sensing 
@@ -426,6 +403,7 @@ for apRII=1:1
                 intaux = intaux(N/2-sz_imcam(1)/2:N/2+sz_imcam(1)/2-1,N/2-sz_imcam(2)/2:N/2+sz_imcam(2)/2-1);
                 figure(3)
                 imagesc(intaux(Ncam/2-20:Ncam/2+20,Ncam/2-20:Ncam/2+20))
+                title('Model Image Current Iteration')
                 axis image
 
             else
@@ -472,9 +450,9 @@ for apRII=1:1
             fprintf('\n')
 
             % Determine whether to continue and/or calculate a new G matrix
-            if(prev_int<curr_int)
+%             if(prev_int<curr_int)
         %         return;
-            elseif(Gcount > Gcountmin)
+            if(Gcount > Gcountmin)
                 recalc_G = true;
             end
 
@@ -529,7 +507,7 @@ for apRII=1:1
                             im_cam = hcstt_TakeCamImage(true,false,tint)-background;
                             curr_reg_arr(countreg) = mean(im_cam(Q));
                         else
-                            curr_reg_arr(countreg) = hcstt_GetIntensityFIU(+(us_total+usII)*poke_amp/1e-9,10 );
+                            curr_reg_arr(countreg) = hcstt_GetIntensityFIU(+(us_total+usII)*poke_amp/1e-9,5 );
                         end
                     end
                     countreg = countreg + 1;
@@ -564,14 +542,17 @@ for apRII=1:1
             %Check if everything is OK
             us_max = max(us*poke_amp*1e9);
             us_max_arr(counttot) = us_max;
+            curr_suppression = int_in_DH(1)/int_in_DH(k);
             fprintf([' Max us: ', num2str(us_max),'nm'])
             fprintf('\n')
             fprintf([' Regularization value: ', num2str(regval)])
             fprintf([' Gain value: ', num2str(gainval)])
             fprintf('\n')
-            fprintf([' Current Suppression ', num2str(int_in_DH(1)/int_in_DH(k))])
+            fprintf([' Current Suppression ', num2str(curr_suppression)])
             fprintf('\n')
-
+            if k==10 && curr_suppression<10
+                break
+            end
         end
 %% update one last time with new solution
 
@@ -620,7 +601,7 @@ for apRII=1:1
         if normal_EFC
             Eab =  EFSensing_RegularEFC_labTest(wf2_current,us_total*poke_amp,info);
         else
-            Eab =  EFSensing_EFCwFiber_labTest(wf2_current,us_total*poke_amp,info);
+            Eab =  EFSensing_EFCwFiber_labTestv2(wf2_current,us_total*poke_amp,info);
         end
         %
 
@@ -691,19 +672,19 @@ for apRII=1:1
 %% Save data from this EFC run
         
         fig0 = figure(2);
-        plot(1:k,int_in_DH/peakInt)
+        plot(1:k,log10(int_in_DH/peakInt))
         xlabel('Iteration')
-        ylabel('Mean Intensity in DH')
-        title(['EFC - Mean Intensity vs it (Suppression of ',num2str(int_in_DH(1)/int_in_DH(k)),')'])
+        ylabel('Intensity (Log Scale)')
+        title(['EFC -  (Suppression of ',num2str(int_in_DH(1)/int_in_DH(k)),')'])
     %     ylim([0.6e-4 1.2e-4])
         % legend('Coupling SMF','Coupling MMF');
         export_fig([outDir,'MeanInt_vs_it',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
         close(fig0);
 
         fig0 = figure(3);
-        plot(1:k,int_est_in_DH/peakInt)
+        plot(1:k,log10(int_est_in_DH/peakInt))
         xlabel('Iteration')
-        ylabel('Mean EST Intensity in DH')
+        ylabel('Mean EST Intensity (Log Scale)')
         title(['EFC - Mean EST Intensity vs it'])
     %     ylim([0 1e-3])
         % legend('Coupling SMF','Coupling MMF');
@@ -735,30 +716,30 @@ for apRII=1:1
 end
 hcstt_DisconnectDevices();
 
-if debug
-    if use_fiber
-        figure(1)
-        plot(1:numel(actxc_fib_check_arr),actxc_fib_check_arr)
-        title('Actxcyc sinusoid at each iteration, ie drift')
-        xlabel('iteration')
-        ylabel('act x cycle')
-        export_fig([outDir,'ActxcycDMSinusoidVsIteration.png'],'-r300');
-        figure(2)
-        plot(1:numel(ang_fib_check_arr),ang_fib_check_arr)
-        title('Angle DM sinusoid at each iteration, ie drift')
-        xlabel('iteration')
-        ylabel('angle')
-        export_fig([outDir,'AngleDMSinusoidVsIteration.png'],'-r300');
-
-        % Save us_total as flat:
-    %     load('NewFlat_SpeckleOnFiber_May10')
-    % %     load('output\NewFlat_testPReviousEFCRun');
-        load('ImageSharpening_fminconIt2_Apr1')
-        us_total_mat = vec2mat(us_total,Nact);
-        us_total_mat = us_total_mat';
-        flat_SN = us_total_mat + flat_SN;
-        save('output\NewFlat_testPReviousEFCRun.mat','flat_SN')
-    end
+% if debug
+%     if use_fiber
+%         figure(1)
+%         plot(1:numel(actxc_fib_check_arr),actxc_fib_check_arr)
+%         title('Actxcyc sinusoid at each iteration, ie drift')
+%         xlabel('iteration')
+%         ylabel('act x cycle')
+%         export_fig([outDir,'ActxcycDMSinusoidVsIteration.png'],'-r300');
+%         figure(2)
+%         plot(1:numel(ang_fib_check_arr),ang_fib_check_arr)
+%         title('Angle DM sinusoid at each iteration, ie drift')
+%         xlabel('iteration')
+%         ylabel('angle')
+%         export_fig([outDir,'AngleDMSinusoidVsIteration.png'],'-r300');
+% 
+%         % Save us_total as flat:
+%     %     load('NewFlat_SpeckleOnFiber_May10')
+%     % %     load('output\NewFlat_testPReviousEFCRun');
+%         load('ImageSharpening_fminconIt2_Apr1')
+%         us_total_mat = vec2mat(us_total,Nact);
+%         us_total_mat = us_total_mat';
+%         flat_SN = us_total_mat + flat_SN;
+%         save('output\NewFlat_testPReviousEFCRun.mat','flat_SN')
+%     end
     
 %     figure(3)
 %     plot(elapsedTime_arr/60,Eab1_fib_check_arr)
@@ -770,7 +751,7 @@ if debug
 %     ylabel('Eab')
 %     legend('Real{EF}','Imag{EF}')
 %     export_fig([outDir,'EabVsIterationv2.png'],'-r300');
-end
+% end
 % Save actual data
 % save([info.outDir,'coupl_SMF_in_DH.mat'],'coupl_SMF_in_DH');
 

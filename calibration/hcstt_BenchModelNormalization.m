@@ -20,7 +20,7 @@ apRad = 68;
 tint_normalization = 0.05;
 powerSetting = 16;
 
-label = '_0803';
+label = '_0816';
 outDir = ['output',filesep,'test_Normalization',label,filesep];
 mkdir(outDir);
 
@@ -124,4 +124,4 @@ peakInt = ma*normSource;
 
 normPower_normalization = normPower;
 peakInt_normalization = peakInt;
-save('utils\BenchModelNormalization_0803.mat','normPower_normalization','peakInt_normalization','tint_normalization')
+save('utils\BenchModelNormalization_0816.mat','normPower_normalization','peakInt_normalization','tint_normalization')

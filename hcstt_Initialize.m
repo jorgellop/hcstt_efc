@@ -72,12 +72,18 @@ JR_UPDATE_MultiDM(drv_inf, FlatCommand);
 if(setup_PM)
     % PM Setup
     disp('Setting up Powermeter');
+    s = daq.createSession('ni');
+    addAnalogInputChannel(s, 'Dev1', 0, 'Voltage');
+
+    addDigitalChannel(s, 'Dev1', 'Port0/Line0:4', 'OutputOnly');
+    outputSingleScan(s, [0, 0, 1,1,0]);
+    
     % Setup Femto power meter
     s = daq.createSession('ni');
     addAnalogInputChannel(s,'Dev1', 0, 'Voltage');
 
     s.Rate = 10;
-    s.DurationInSeconds = 1;
+    s.DurationInSeconds = 1/10;
 
     %starting conversion scale (in V/W)
     pm_scale = 10^9;

@@ -105,7 +105,7 @@ for KK = 1:num_DM_shapes
     
     % Measure the intensity out of the fiber for the positive probe
 
-    int_plus = hcstt_GetIntensityFIU((+dm_actuators_mat0(:) + us_total)/1e-9,15);  % dm_actuators_mat is a 12^2x1 array with the actuators heights in nm
+    int_plus = hcstt_GetIntensityFIU((+dm_actuators_mat0(:) + us_total)/1e-9,5);  % dm_actuators_mat is a 12^2x1 array with the actuators heights in nm
 %     hcstt_UpdateMultiDM((+dm_actuators_mat0 + us_total)/1e-9)
 %     figure(111)
 %     im_cam = hcstt_TakeCamImage(false,true,0.7);
@@ -119,7 +119,7 @@ for KK = 1:num_DM_shapes
     %
     
     % Measure the intensity out of the fiber for the positive probe
-    int_minus = hcstt_GetIntensityFIU((-dm_actuators_mat0(:) + us_total)/1e-9,15); % dm_actuators_mat is a 12^2x1 array with the actuators heights in nm
+    int_minus = hcstt_GetIntensityFIU((-dm_actuators_mat0(:) + us_total)/1e-9,5); % dm_actuators_mat is a 12^2x1 array with the actuators heights in nm
     %
     
     %
@@ -130,7 +130,7 @@ for KK = 1:num_DM_shapes
     %     
 end
 
-x_hat = pinv(H_mat)*DeltaI_arr
+x_hat = pinv(H_mat)*DeltaI_arr;
 % 
 % wf2_prob_true = prescription_DM1toImage_compact_vFiberCoupling( wf1_werrors, zeros(N,N), true, info);
 % wf2_prob_true = wf2_prob_true / sqrt(normI);

@@ -4,7 +4,7 @@
 % 
 %
 % v2 Jorge Llop - Feb 15, 2018
-% modified Milan Roberson - Aug 8, 2018
+% modified Milan Roberson - Aug 15, 2018
 clear all;
 close all;
 addpath(genpath('utils'),genpath('export_scripts'));
@@ -40,6 +40,8 @@ fiberDiam = 2*0.71; % Fiber diam. (lambda_0/D)
 use_fiber = false;
 normal_EFC = true;
 
+num_DM_shapes = 5;
+
 label = '_testEFSensing_RegularEFC_Aug03';
 outDir = ['output',filesep,'EFC_wFiber_LabDemonstration',label,filesep];
 mkdir(outDir);
@@ -57,13 +59,14 @@ info.lam_arr = lam_arr;
 info.numOfWavelengths = numOfWavelengths;
 info.useApodizer = false;
 info.useGPU = false; 
-info.FPM = exp(1i*8*THETA);
+info.FPM = exp(1i*4*THETA);
 info.outDir = outDir;
 info.xvals = xvals;
 info.yvals = yvals;
 info.use_fiber = use_fiber;
 info.normal_EFC = normal_EFC;
 info.LPM = exp(-(RHO/(0.85*apRad)).^1000);
+info.num_DM_shapes = num_DM_shapes;
 
 % Define the aperture for the model propagation
 wfin_noerrors = complex(ones(N, N), zeros(N, N)) ;
@@ -208,7 +211,7 @@ axis image
 colorbar
 title('CAM - flat DM')
 
-one_it = true; % are we trying just once, or doing a parameter search?
+one_it = false; % are we trying just once, or doing a parameter search?
 if(one_it)
     load('BenchModelNormalization_0803') % load  the normalization parameters
     normPower = normPower_normalization*tint/tint_normalization;%0.00055;%
@@ -253,22 +256,37 @@ else
     numtry = 5;
     x_hatRe = zeros(numtry,num_Q);
     x_hatIm = zeros(numtry,num_Q);
-    p2v_arr = linspace(1,100,numtry);
-    normPower_arr = linspace(0.0005,0.001,numtry);
+    
+    P_mat = eye(2*num_Q)*1e-5; % State estimate error covariance
+    Q_mat = eye(2*num_Q)*1e-5; % Process noise covariance (control noise)
+    R_mat = eye(num_DM_shapes*num_Q)*1e-5; % Observation noise covariance
+    
+    load('KF_cov_estimate');
+    Q_mat = Qnew;
+    R_mat = Rnew;
+    P_mat = Qnew;
+    
+    
+    Eab = EFSensing_RegularEFC_labTest(wf2_current, zeros(Nact^2,1), info); % Initial guess
+    
     for k = 1:numtry
 
         fprintf('Iteration: %d ',k);
 
-%         info.p2v_dm_sensing = p2v_arr(k);
-        info.p2v_dm_sensing = 9;
-        normPower = normPower_arr(k);
-%         normPower =  0.00017;
+        info.p2v_dm_sensing = 5;
+        normPower = normPower_normalization*tint/tint_normalization;
         info.normPower = normPower;
-    %     info.normPower = 43;
+
         wf2_current = wf2_current0 * sqrt(normPower);
-        Eab =  EFSensing_RegularEFC_labTest(wf2_current,zeros(Nact^2,1),info);
+        
+        [Eab, P_mat] =  EFSensing_RegularEFC_labTest_KF(wf2_current,zeros(Nact^2,1),info, Eab, P_mat, Q_mat, R_mat);
         x_hatRe(k,:) = Eab(1,:);
         x_hatIm(k,:) = Eab(2,:);
+        
+        figure(1000);
+        imagesc(P_mat);
+        title('Error Covariance Estimate');
+        
         int = abs(x_hatRe(k,:)).^2+abs(x_hatIm(k,:)).^2;
         med_cam = median(int_cam);
         mean_cam = mean(int_cam);

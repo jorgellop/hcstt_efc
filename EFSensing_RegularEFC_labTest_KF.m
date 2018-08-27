@@ -1,4 +1,4 @@
-function [ x_hat ] =  EFSensing_RegularEFC_labTest_KF(wf0,us_total,info,)
+function [ x_hat, P_mat ] =  EFSensing_RegularEFC_labTest_KF(wf0,us_total,info,x_hat_old,P_mat, Q_mat, R_mat)
 % Performs the Electric Field extraction for pixel based EFC with Kalman
 % Filter.
 
@@ -57,7 +57,7 @@ wfin_noerrors = complex(ones(N, N), zeros(N, N)) ;
 wfin_noerrors(RHO > apRad) = 0;
 background = info.background;
 
-num_DM_shapes = 5;
+num_DM_shapes = info.num_DM_shapes;
 ph_arr = linspace(0, 3/2*pi, num_DM_shapes);
 
 H_regular_mat = zeros(num_DM_shapes,num_Q,2);
@@ -160,11 +160,46 @@ for KK = 1:num_DM_shapes
     H_regular_mat(KK, :, :) = 4*[Gu_re2(Q4G),Gu_im2(Q4G)];
     %     
 end
-x_regular_hat = zeros(2,num_Q);
-H = zeros(num_DM_shapes,2);
-for II = 1 : num_Q
-    H(:,:) = H_regular_mat(:,II,:);
-    x_regular_hat(:,II) =  pinv(H)*DeltaI_regular_arr(:,II);
+% x_regular_hat = zeros(2,num_Q);
+% H = zeros(num_DM_shapes,2);
+
+x_regular_hat = zeros(2, num_Q);
+
+z_hat = reshape(DeltaI_regular_arr, [num_DM_shapes*num_Q, 1]);
+q = num2cell(H_regular_mat, [1, 3]);
+H = blkdiag(q{:});
+
+x_hat = x_hat_old;
+P_mat = P_mat + Q_mat;
+S_mat = R_mat + H * P_mat * H.';
+K_mat = P_mat * H.' * pinv(S_mat);
+x_hat = x_hat + K_mat * (z_hat - H * x_hat);
+P_mat = (eye('like',P_mat) - K_mat * H) * P_mat;
+
+% for II = 1 : num_Q
+%     H_mat = H_regular_mat(:,II,:); % Observation matrix
+%     z_hat = DeltaI_regular_arr(:,II); % Observation vector
+%     
+%     % Predict step:
+%     x_regular_hat(:,II) = x_hat_old(:,II); % State does not evolve.
+%     P_mat(:,:,II) = P_mat(:,:,II) + Q_mat(:,:,II); % Add process noise
+%     
+%     % Update:
+%     S_mat = R_mat(:,:,II) + H_mat * P_mat(:,:,II) * H_mat.'; % Add 
+%     K_mat = P_mat(:,:,II) * H_mat.' * pinv(S_mat);
+%     x_hat = x_hat + K_mat * (z_hat - H_mat * x_hat);
+%     P_mat(:,:,II) = (eye('like',P_mat(:,:,II)) - K_mat * H_mat) * P_mat(:,:,II);
+% end
+
+% for II = 1 : num_Q
+%     H(:,:) = H_regular_mat(:,II,:);
+%     x_regular_hat(:,II) =  pinv(H)*DeltaI_regular_arr(:,II);
+% end
+% x_hat = x_regular_hat;
+
 end
-x_hat = x_regular_hat;
-end
+
+% DeltaIRegular = [num_DM_shapes * num_Q]
+% H_regular_mat = [num_DM_shapes  * num_Q, 2]
+% x_hat = [2, num_Q]
+
