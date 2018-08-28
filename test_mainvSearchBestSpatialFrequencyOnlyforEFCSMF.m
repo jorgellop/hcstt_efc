@@ -183,24 +183,6 @@ if normal_EFC
     info.Q4G = Q4G;
  end
 
-%Find position of fiber
-if use_fiber
-    [actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(x_fib,0);
-    info.actxc_fib = actxc_fib;
-    info.ang_fib = ang_fib;
-    %Calculate position in pixels
-    if actxc_fib>max(actxcDM_arr) 
-        r_fib_pix = interp1(actxcDM_arr,distPix_meas,actxc_fib,'linear','extrap');
-    elseif actxc_fib<min(actxcDM_arr)
-        disp('Fiber too far away from star!')
-        return;
-    else
-        r_fib_pix = interp1(actxcDM_arr,distPix_meas,actxc_fib);
-    end
-    x_fib_pix = -r_fib_pix*cos(ang_fib);
-    y_fib_pix = -r_fib_pix*sin(ang_fib);
-    % Model of the fiber mode shape
-end
 
 counttot = 0;
 Nact = 12;  % Number of DM actuators, Nact^2
@@ -210,33 +192,49 @@ tic
 % info.LPM = exp(-(RHO/(0.85*apRad)).^1000);
 
 for apRII=1:1
-    apRad = 142;%apRad_arr(apRII);
-%     scaleR = scaleR_arr(apRII);
-    lambdaOverD = N/apRad/2; % lambda/D (samples) 
-
-    fiberDiam = 2*0.71; % Fiber diam. (lambda_0/D)
-    fiberDiam_pix = (fiberDiam*lambdaOverD);
-    
-    [THETA_fib,RHO_fib] = cart2pol(X - x_fib_pix ,Y - y_fib_pix);
-    fibermode0 = sqrt(2/(pi*(fiberDiam_pix/2)^2))* ...
-            exp(-(RHO_fib/(fiberDiam_pix/2)).^2);
-    info.fibermode0 = fibermode0;
-
-    info.fiberDiam = fiberDiam;
-    info.apRad = apRad;
-    info.lambdaOverD = lambdaOverD;
-
-    info.LPM = exp(-(RHO/(0.85*apRad)).^1000);
-    
-    % Wavefront at entrance for model propagation
-    wfin_noerrors = complex(ones(N, N), zeros(N, N)) ;
-    wfin_noerrors(RHO > apRad) = 0;
-
-    for posII=1:10
+    for posII=11:91
 
 
 %         [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvBlindSearch(N,apRad,posII);
-        [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvFindBestDMOrientation(N,apRad,posII);
+        [actxc_fib,ang_fib] = hcstt_test_getSpatialFreqOfFiber(posII);
+        info.actxc_fib = actxc_fib;
+        info.ang_fib = ang_fib;
+        %Calculate position in pixels
+        if actxc_fib>max(actxcDM_arr) 
+            r_fib_pix = interp1(actxcDM_arr,distPix_meas,actxc_fib,'linear','extrap');
+        elseif actxc_fib<min(actxcDM_arr)
+            disp('Fiber too far away from star!')
+            return;
+        else
+            r_fib_pix = interp1(actxcDM_arr,distPix_meas,actxc_fib);
+        end
+        x_fib_pix = -r_fib_pix*cos(ang_fib);
+        y_fib_pix = -r_fib_pix*sin(ang_fib);
+
+        apRad = 142;%apRad_arr(apRII);
+    %     scaleR = scaleR_arr(apRII);
+        lambdaOverD = N/apRad/2; % lambda/D (samples) 
+
+        fiberDiam = 2*0.71; % Fiber diam. (lambda_0/D)
+        fiberDiam_pix = (fiberDiam*lambdaOverD);
+
+        [THETA_fib,RHO_fib] = cart2pol(X - x_fib_pix ,Y - y_fib_pix);
+        fibermode0 = sqrt(2/(pi*(fiberDiam_pix/2)^2))* ...
+                exp(-(RHO_fib/(fiberDiam_pix/2)).^2);
+        info.fibermode0 = fibermode0;
+
+        info.fiberDiam = fiberDiam;
+        info.apRad = apRad;
+        info.lambdaOverD = lambdaOverD;
+
+        info.LPM = exp(-(RHO/(0.85*apRad)).^1000);
+
+        % Wavefront at entrance for model propagation
+        wfin_noerrors = complex(ones(N, N), zeros(N, N)) ;
+        wfin_noerrors(RHO > apRad) = 0;
+
+
+        [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvFindBestDMOrientation(N,apRad,2);
         info.posDM_x = posDM_x;
         info.posDM_y = posDM_y;
         info.ac_spac = ac_spac;
@@ -270,7 +268,7 @@ for apRII=1:1
         im_cam = hcstt_TakeCamImage(true,false,tint)-background;
         sz_imcam = size(im_cam);
         info.sz_imcam = sz_imcam;
-    %     hcstt_test_plotCamImage(im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20), [outDir,'CamImage_initial_DMconfig',num2str(posII)], [41,41] );
+    %     hcstt_test_plotCamImage(im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20), [outDir,'CamImage_initial_FreqSearch',num2str(posII)], [41,41] );
         if normal_EFC
             [Xcam,Ycam] = meshgrid(-y_cent_cam+1:Ncam-y_cent_cam,-x_cent_cam+1:Ncam-x_cent_cam); 
             [THETAcam, RHOcam] = cart2pol(Xcam,Ycam);
@@ -331,10 +329,10 @@ for apRII=1:1
     %         set(gca,'YDir','normal');
     %         set(fig0,'units', 'inches', 'Position', [0 0 5 5])
 %             if debug
-%                 export_fig([info.outDir,'DM1surf_',num2str(k),'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png']);
+%                 export_fig([info.outDir,'DM1surf_',num2str(k),'_FreqSearch',num2str(posII),'_apRad',num2str(apRad),'.png']);
 %             else
                 if k == maxits
-                    export_fig([info.outDir,'DM1surf_final_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png']);
+                    export_fig([info.outDir,'DM1surf_final_FreqSearch',num2str(posII),'_apRad',num2str(apRad),'.png']);
                 end
 %             end
     %         close(fig0);    
@@ -534,7 +532,7 @@ for apRII=1:1
                 if k==1
                     Greg = [Gsplit;zeros(Nact^2)];
                     us0 = -1*pinv(Greg)*Eabreg; %
-                    save([info.outDir,'us0_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.mat'],'us0');
+                    save([info.outDir,'us0_FreqSearch',num2str(posII),'_apRad',num2str(apRad),'.mat'],'us0');
                 end
             end
             %
@@ -590,7 +588,7 @@ for apRII=1:1
 %         set(gca,'YDir','normal');
 %         set(fig0,'units', 'inches', 'Position', [0 0 5 5])
         if debug
-            export_fig([info.outDir,'DM1surf_',num2str(k),'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png']);
+            export_fig([info.outDir,'DM1surf_',num2str(k),'_FreqSearch',num2str(posII),'_apRad',num2str(apRad),'.png']);
         end
         
         % Simualte WF in image plane with current DM shape, this is needed for the WF sensing
@@ -678,7 +676,7 @@ for apRII=1:1
         title(['EFC -  (Suppression of ',num2str(int_in_DH(1)/int_in_DH(k)),')'])
     %     ylim([0.6e-4 1.2e-4])
         % legend('Coupling SMF','Coupling MMF');
-        export_fig([outDir,'MeanInt_vs_it',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
+        export_fig([outDir,'MeanInt_vs_it',label,'_FreqSearch',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
         close(fig0);
 
         fig0 = figure(3);
@@ -688,7 +686,7 @@ for apRII=1:1
         title(['EFC - Mean EST Intensity vs it'])
     %     ylim([0 1e-3])
         % legend('Coupling SMF','Coupling MMF');
-        export_fig([outDir,'MeanESTInt_vs_it',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
+        export_fig([outDir,'MeanESTInt_vs_it',label,'_FreqSearch',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
         close(fig0);
 
         if normal_EFC
@@ -696,7 +694,7 @@ for apRII=1:1
             imagesc(intaux(Ncam/2-20:Ncam/2+20,Ncam/2-20:Ncam/2+20))
             axis image
             title(['Simulated image to see where Q falls DMconfig',num2str(posII),' apRad',num2str(apRad),])
-            export_fig([outDir,'SimulatedImageWhereQFalls',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
+            export_fig([outDir,'SimulatedImageWhereQFalls',label,'_FreqSearch',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
             close(fig0);
         end
 
@@ -707,12 +705,12 @@ for apRII=1:1
         axis image
         title(['Final Image DMconfig',num2str(posII),'apRad',num2str(apRad),])
         colorbar
-        export_fig([outDir,'CamImageFinalImage',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
+        export_fig([outDir,'CamImageFinalImage',label,'_FreqSearch',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
         im_cam_crop = im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20);
 
-        save([info.outDir,'data_intvsit_dmshapes_',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.mat'],'us_total','im_cam_crop','int_in_DH','peakInt','int_est_in_DH','regvalfin_arr','gainvalfin_arr');
+        save([info.outDir,'data_intvsit_dmshapes_',label,'_FreqSearch',num2str(posII),'_apRad',num2str(apRad),'.mat'],'us_total','im_cam_crop','int_in_DH','peakInt','int_est_in_DH','regvalfin_arr','gainvalfin_arr');
     end
-%     hcstt_test_plotCamImage(im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20), [outDir,'CamImage_final','_DMconfig',num2str(posII)], [41,41] );
+%     hcstt_test_plotCamImage(im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20), [outDir,'CamImage_final','_FreqSearch',num2str(posII)], [41,41] );
 end
 hcstt_DisconnectDevices();
 

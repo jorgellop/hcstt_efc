@@ -16,7 +16,7 @@ sb.Capacity = 4100;
 
 %Create Matrix to hold images: Width(200)xHeight(200)x#Images            
     %Images have been cropped to reduce cube size
-Idat = zeros(400,400,itr);    %Raw cropped images
+Idat = zeros(200,200,itr);    %Raw cropped images
 %Create column vector to hold Power data
 Pdat = zeros(itr, 1);
 %Create Matrix to hold trial parameters
@@ -62,7 +62,7 @@ for i=1:1
         % %Reshape array into plottable matrix
         img.Data = reshape(uint8(tmp), [img.Width, img.Height, img.Bits/8]);
         % %Crop data to (200x200) around user input center; Save image
-        Idat(:,:,1)  = img.Data(int16(Ycr-199):int16(Ycr+200),int16(Xcr-199):int16(Xcr+200));
+        Idat(:,:,1)  = img.Data(int16(Ycr-99):int16(Ycr+100),int16(Xcr-99):int16(Xcr+100));
         Iflat        = Idat(:,:,1);
         % %Draw cropped flat image
         set(himg, 'CData', Idat(:,:,1));

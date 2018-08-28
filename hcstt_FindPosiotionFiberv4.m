@@ -16,7 +16,6 @@ ang_arr = linspace(ang_est-0.105,ang_est+0.105,num_ang);
 % Initialize outputs
 fiber_qx = [0 0];
 best_amplitude = 0;
-best_phase = 0;
 ph_arr = linspace(0,3*pi/2,3);
 
 mat = zeros(num_actxc,num_ang);
