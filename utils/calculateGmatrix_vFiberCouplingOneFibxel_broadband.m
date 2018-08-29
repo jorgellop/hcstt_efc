@@ -13,11 +13,12 @@ function [ G ] = calculateGmatrix_vFiberCouplingOneFibxel_broadband( bmb4dm, sur
 %     normIc = info.normIc;
 %     fibermode0 = info.fibermode0;
 %     Q_fib = info.Q_fib;
-    normal_EFC = info.normal_EFC;
+%     normal_EFC = info.normal_EFC;
+EFCSMF = info.EFCSMF;
     lam_arr = info.lam_arr;
 %     fiberDiam_pix = info.fiberDiam_pix;
     numOfWavelengths = info.numOfWavelengths;
-    if(normal_EFC)
+    if(~EFCSMF)
 %         G = [];
 %         for II = 1:numOfWavelengths
             G = [zeros(nnz(Q),Nact^2)];
@@ -29,7 +30,7 @@ function [ G ] = calculateGmatrix_vFiberCouplingOneFibxel_broadband( bmb4dm, sur
 	count = 0; 
     
 %     factor_fiber_thruput = info.factor_fiber_thruput;
-    use_fiber = info.use_fiber;
+%     use_fiber = info.use_fiber;
     % propagate to image plane using compact model and initial DM shape
 %     wf_aux = fftshift(bmb4dm).*fftshift(exp(1i*4*pi*surf_DM1_init/(800e-9)));
 %     bm0 = fftshift(fft2(ifftshift(wf_aux)));
@@ -62,7 +63,7 @@ function [ G ] = calculateGmatrix_vFiberCouplingOneFibxel_broadband( bmb4dm, sur
             FP_colSMF0 = [];
             for index = 1:numel(lam_arr)
                 lam = lam_arr(index);
-                if(normal_EFC)
+                if(~EFCSMF)
                     bm0_lam = bm0(:,:,index);
                     bm_lam = bm(:,:,index);
                     bm0_lam = bm0_lam(N/2-sz_imcam(1)/2:N/2+sz_imcam(1)/2-1,N/2-sz_imcam(2)/2:N/2+sz_imcam(2)/2-1);
@@ -72,12 +73,12 @@ function [ G ] = calculateGmatrix_vFiberCouplingOneFibxel_broadband( bmb4dm, sur
                 end
                     %                 FP_colSMF = [FP_colSMF;(lambda0/lam)*FP(Q(:,:,index)==1).*fibermode0JJ_col/sqrt(normIc)];
 %                 FP_colSMF0 = [FP_colSMF0;(lambda0/lam)*FP0(Q(:,:,index)==1).*fibermode0JJ_col/sqrt(normIc)];
-                if(use_fiber)
+                if(EFCSMF)
                     fibermode0JJ = fibermode0(:,:,index);
                     G(index,count) = sum(sum((lambda0/lam)*bm(:,:,index).*fibermode0JJ))-sum(sum((lambda0/lam)*bm0(:,:,index).*fibermode0JJ)); % The column of the G matrix is the difference in the field 
                 end
             end
-            if(normal_EFC)
+            if(~EFCSMF)
 %                 G(:,count) = FP_col*factor_fiber_thruput(index,1)-FP0_col*factor_fiber_thruput(index,1); % The column of the G matrix is the difference in the field 
                 G(:,count) = FP_col-FP0_col; % The column of the G matrix is the difference in the field 
             end

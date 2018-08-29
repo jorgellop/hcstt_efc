@@ -50,12 +50,12 @@ elseif posII ==7
 elseif posII ==8
     posDM_x = sort(-posDM_y0,'descend')+N/2;
     posDM_y = sort(posDM_x0,'descend')+N/2;
-elseif posII ==9
-    posDM_x = sort(posDM_x0,'ascend')+N/2;
-    posDM_y = sort(posDM_y0,'ascend')+N/2;
-elseif posII ==10
-    posDM_x = sort(-posDM_x0,'ascend')+N/2;
-    posDM_y = sort(-posDM_y0,'ascend')+N/2;
+% elseif posII ==9
+%     posDM_x = sort(posDM_x0,'ascend')+N/2;
+%     posDM_y = sort(posDM_y0,'ascend')+N/2;
+% elseif posII ==10
+%     posDM_x = sort(-posDM_x0,'ascend')+N/2;
+%     posDM_y = sort(-posDM_y0,'ascend')+N/2;
 
 end
 end

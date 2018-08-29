@@ -13,7 +13,7 @@ use_fiber = true;
 normal_EFC = false;
 debug = true;
 
-label = '_Fiber_10config_Aug28';
+label = '_Fiber_8configWrongSideFiber_Aug28';
 outDir = ['output',filesep,'EFC_wFiber_LabDemonstration',label,filesep];
 mkdir(outDir);
 
@@ -197,8 +197,8 @@ if use_fiber
     else
         r_fib_pix = interp1(actxcDM_arr,distPix_meas,actxc_fib);
     end
-    x_fib_pix = -r_fib_pix*cos(ang_fib);
-    y_fib_pix = -r_fib_pix*sin(ang_fib);
+    x_fib_pix = r_fib_pix*cos(ang_fib);
+    y_fib_pix = r_fib_pix*sin(ang_fib);
     % Model of the fiber mode shape
 end
 
@@ -232,7 +232,7 @@ for apRII=1:1
     wfin_noerrors = complex(ones(N, N), zeros(N, N)) ;
     wfin_noerrors(RHO > apRad) = 0;
 
-    for posII=1:10
+    for posII=1:8
 
 
 %         [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvBlindSearch(N,apRad,posII);

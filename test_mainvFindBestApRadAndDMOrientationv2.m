@@ -9,12 +9,12 @@ clear all;
 close all;
 addpath(genpath('utils'),genpath('export_scripts'));
 
-use_fiber = true;
-normal_EFC = false;
+% use_fiber = true;
+% normal_EFC = false;
 EFCSMF = true;
 debug = true;
 
-label = '_Fiber_10config_Aug28';
+label = '_Fiber_8config_mainv2_rightSide_Aug28';
 outDir = ['output',filesep,'EFC_wFiber_LabDemonstration',label,filesep];
 mkdir(outDir);
 
@@ -33,7 +33,7 @@ N = 2^10;
 [X,Y] = meshgrid(-N/2:N/2-1); 
 xvals = X(1,:);yvals = Y(:,1);
 [THETA,RHO] = cart2pol(X,Y);
-tint = 10;
+tint = 32;
 
 
 lambda0 = 635e-9;
@@ -61,15 +61,16 @@ info.FPM = exp(1i*4*THETA);
 info.outDir = outDir;
 info.xvals = xvals;
 info.yvals = yvals;
-info.use_fiber = use_fiber;
-info.normal_EFC = normal_EFC;
+% info.use_fiber = use_fiber;
+% info.normal_EFC = normal_EFC;
+info.EFCSMF = EFCSMF;
 info.tint = tint;
 info.LPM = ones(N,N);
 
 
 % Total Power to normilize model Gu and intensity from the fiber. Need of
 % normalization factor
-totalPowerEFCSMF = 1.6177e-06;
+totalPowerEFCSMF = 1.5242e-06;
 normPowerEFCSMF = totalPowerEFCSMF/3.8185e10;
 peakIntEFCSMF = totalPowerEFCSMF;
 load('BenchModelNormalization_0803')
@@ -133,7 +134,8 @@ info.x_cent_cam = x_cent_cam;
 info.y_cent_cam = y_cent_cam;
 
 %Find position of fiber
-[actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(x_fib,0);
+x_fib_est = 2.45;
+[actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(x_fib_est,0);
 info.actxc_fib = actxc_fib;
 info.ang_fib = ang_fib;
 %Calculate position in pixels
@@ -145,8 +147,8 @@ elseif actxc_fib<min(actxcDM_arr)
 else
     r_fib_pix = interp1(actxcDM_arr,distPix_meas,actxc_fib);
 end
-x_fib_pix = -r_fib_pix*cos(ang_fib);
-y_fib_pix = -r_fib_pix*sin(ang_fib);
+x_fib_pix = r_fib_pix*cos(ang_fib);
+y_fib_pix = r_fib_pix*sin(ang_fib);
 info.x_fib_pix = x_fib_pix;
 info.y_fib_pix = 0;
 % x_fib=2.5;
@@ -213,7 +215,7 @@ for apRII=1:1
     wfin_noerrors = complex(ones(N, N), zeros(N, N)) ;
     wfin_noerrors(RHO > apRad) = 0;
 
-    for posII=1:10
+    for posII=2:10
 %         [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvBlindSearch(N,apRad,posII);
         [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvFindBestDMOrientation(N,apRad,posII);
         info.posDM_x = posDM_x;
@@ -297,7 +299,7 @@ for apRII=1:1
 %             end
             if k==1
                 wf2_current = prescription_DM1toImage_compact_vFiberCoupling_broadband( wfin_noerrors, surf_DM10, true, info);
-                wf2_current = wf2_current * sqrt(normPower);
+                wf2_current = wf2_current * sqrt(info.normPower);
                 immod_flat = abs(wf2_current).^2;
                 figure(5)
                 immod_flat = immod_flat(N/2-sz_imcam(1)/2:N/2+sz_imcam(1)/2-1,N/2-sz_imcam(2)/2:N/2+sz_imcam(2)/2-1);
@@ -478,7 +480,11 @@ for apRII=1:1
             %Check if everything is OK
             us_max = max(us*poke_amp*1e9);
             us_max_arr(counttot) = us_max;
-            curr_suppression = int_in_DH(1)/int_in_DH(k);
+            if EFCSMF
+                curr_suppression = coupl_SMF_in_DH(1)/coupl_SMF_in_DH(k);
+            else
+                curr_suppression = int_in_DH(1)/int_in_DH(k);
+            end
             fprintf([' Max us: ', num2str(us_max),'nm'])
             fprintf('\n')
             fprintf([' Regularization value: ', num2str(regval)])
@@ -531,7 +537,7 @@ for apRII=1:1
         
         % Simualte WF in image plane with current DM shape, this is needed for the WF sensing
         wf2_current = prescription_DM1toImage_compact_vFiberCoupling_broadband( wfin_noerrors, surf_DM10, true, info);
-        wf2_current = wf2_current * sqrt(normPower);
+        wf2_current = wf2_current * sqrt(info.normPower);
 
         % Perform WF sensing
         if ~EFCSMF
@@ -556,7 +562,7 @@ for apRII=1:1
         curr_coupl_SMF = hcstt_GetIntensityFIU(+(us_total)*poke_amp/1e-9,10 );%sum(abs(Eab).^2/totalPower)/numel(lam_fracs);
         coupl_SMF_in_DH = [coupl_SMF_in_DH, curr_coupl_SMF];
 
-        if ~normal_EFC
+        if EFCSMF
             curr_int_est =  sum(sum(abs(Eab).^2))/numel(lam_fracs);
             prev_int = prev_coupl_SMF;
             curr_int = curr_coupl_SMF;
@@ -587,7 +593,7 @@ for apRII=1:1
             title(['EFC -  (Suppression of ',num2str(int_in_DH(1)/int_in_DH(k)),')'])
         end
         pixbox = q_pix*2+1;
-        legend('SMF',[num2str(pixbox),'x',num2str(pixbox),' pix box']);
+        legend([num2str(pixbox),'x',num2str(pixbox),' pix box'],'SMF');
         export_fig([outDir,'MeanInt_vs_it',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
         close(fig0);
 
@@ -624,7 +630,8 @@ for apRII=1:1
         export_fig([outDir,'CamImageFinalImage',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
         im_cam_crop = im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20);
 
-        save([info.outDir,'data_intvsit_dmshapes_',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.mat'],'us_total','im_cam_crop','int_in_DH','peakInt','int_est_in_DH','regvalfin_arr','gainvalfin_arr');
+        save([info.outDir,'data_intvsit_dmshapes_',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.mat'],...
+            'us_total','im_cam_crop','int_in_DH','coupl_SMF_in_DH','peakIntEFCSMF','peakIntRegEFC','int_est_in_DH','regvalfin_arr','gainvalfin_arr');
     end
 %     hcstt_test_plotCamImage(im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20), [outDir,'CamImage_final','_DMconfig',num2str(posII)], [41,41] );
 end

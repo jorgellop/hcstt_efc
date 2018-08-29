@@ -1,4 +1,4 @@
-function hcstt_test_plotCamImage(im, full_path , sz)
+function hcstt_test_plotCamImage(im,titlestr, full_path , sz)
 %plotFocusAmp Makes a nice plot of the pupil amplitude
 %   Detailed explanation goes here
 % close;
@@ -12,7 +12,7 @@ function hcstt_test_plotCamImage(im, full_path , sz)
     colorbar; 
     axis image;
 %     axis([-10 10 -10 10]*bm.wl*bm.fr*1e3);
-    title('HCSTT Camera Image');
+    title(titlestr);
 %     xlabel('x (pix)');
 %     ylabel('y (pix)');
 %     text(5*bm.wl*bm.fr*1e3,9*bm.wl*bm.fr*1e3,['f/',num2str(bm.fr,'%.1f')],'Color','w');

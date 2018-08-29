@@ -13,7 +13,7 @@ use_fiber = true;
 normal_EFC = false;
 debug = true;
 
-label = '_Fiber_10config_Aug28';
+label = '_FibervSearchPos_35Positions_Aug28';
 outDir = ['output',filesep,'EFC_wFiber_LabDemonstration',label,filesep];
 mkdir(outDir);
 
@@ -62,6 +62,7 @@ info.xvals = xvals;
 info.yvals = yvals;
 info.use_fiber = use_fiber;
 info.normal_EFC = normal_EFC;
+info.EFCSMF = true;
 info.tint = tint;
 info.LPM = ones(N,N);
 
@@ -192,7 +193,7 @@ tic
 % info.LPM = exp(-(RHO/(0.85*apRad)).^1000);
 
 for apRII=1:1
-    for posII=11:91
+    for posII=1:35
 
 
 %         [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvBlindSearch(N,apRad,posII);
