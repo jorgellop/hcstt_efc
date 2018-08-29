@@ -1,43 +1,24 @@
 %{
-DM Writing Function: Write Sinusoid
-- Places a Sin Function on Mirror Surface
-- Sin calculated using DE_DMMapSin.m function
-- Utilizes DE_DMArrayToVect to shape map for write
-*** ASSUMES MIRROR CONNECTION ALREADY PRESENT; DOES NOT CLOSE CONNECTION
-*** Defaults to DE_DMMapSin output setting 7: only returns heigh
-        If desired, hnm can be plotted with imagesc. Refer to DE_DMMapSin
- 
-******************************************************
-- Arguments:
-    h0          = Max poke height in nm
-    q           = angle of sinusoid
-    x0          = actuators per cycle
-    alp         = phase delay
-    drv_info    = DM info from OPEN_mutliDM
-- Returns:
-    hnm         = Surface map as matrix in nm
-    hV          = Vector of voltage percentages for writing
-******************************************************
-
-Compiled By:    Daniel Echeverri
-Last Modified:  08/04/2016
 %}
 
 function [int] = hcstt_GetIntensityFIU(us,num_avg)
 
 global cam img Xcr Ycr CExp s drv_inf flat itr Idat himg pm_scale
 
-
+load(['output',filesep,'NIPhotodiodeGainCalibration'])
 hcstt_UpdateMultiDM(us)
+level0 = 2;
 pause(0.05)
 
 for II = 1:num_avg
     if II==1
         reading = s.inputSingleScan;
         pm_scale=hcstt_getPMNewLevel(reading,pm_scale);
-        int_arr(II) = s.inputSingleScan/pm_scale;
+        level = log10(pm_scale) - 4;
+        gain = prod(gain_arr(level0:level-1))/10^(numel(gain_arr(level0:level-1)));
+        int_arr(II) = s.inputSingleScan/pm_scale*gain;
     else
-        int_arr(II) = s.inputSingleScan/pm_scale;
+        int_arr(II) = s.inputSingleScan/pm_scale*gain;
     end
     pause(0.1)
 end
