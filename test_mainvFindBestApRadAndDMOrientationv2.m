@@ -13,8 +13,9 @@ addpath(genpath('utils'),genpath('export_scripts'));
 % normal_EFC = false;
 EFCSMF = true;
 debug = true;
+regularizationMarx = true;
 
-label = '_Fiber_8config_Aug30';
+label = '_Fiber_3config_regMarx_Aug30';
 outDir = ['output',filesep,'EFC_wFiber_LabDemonstration',label,filesep];
 mkdir(outDir);
 
@@ -138,7 +139,7 @@ info.x_cent_cam = x_cent_cam;
 info.y_cent_cam = y_cent_cam;
 
 %Find position of fiber
-x_fib_est = 2.6;
+x_fib_est = 2.56;
 [actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(x_fib_est,0,info);
 % actxc_fib = 2.575;
 % ang_fib = 0;
@@ -246,12 +247,13 @@ for posII=1:3
     us_total = zeros(Nact^2,1); % Initialize the fractional stroke changes to zero
     poke_amp = 1e-9; % Initialize the poke amplitude
 
-    maxits = 14; % maximum number of EFC iterations allowed
+    maxits = 35; % maximum number of EFC iterations allowed
     Gcount = 0; % counter for number of times G matrix was used
-    Gcountmin = 6; % Minimum number of times to use a G matrix
+    Gcountmin = 10; % Minimum number of times to use a G matrix
     curr_coupl_SMF = 1;
     curr_int = 1e9;
     recalc_G = true; % Initialize the flag to re-calculate the G matrix
+    regularizationMarxOn = false;
     % regvals = logspace(-6,-1,6); % Range of regularization parameters to test
     regval = nan; % Initial regularization value
     int_in_DH = []; % Array to keep track of dark hole irradiance 
@@ -433,44 +435,60 @@ for posII=1:3
         Gsplit = [real(G);imag(G)]; % Splits the G-matrix into real and imaginary parts 
 
         % Regalarization value, to be updated each iteration?
-        numreg = 7;
-        numgain = 5;
-        regval_arr = logspace(-8,-1,numreg);
-        gain_arr = linspace(0.1,4,numgain);
-        curr_reg_arr = zeros(1,numreg*numgain) + nan;
-        countreg = 1;
-        for III=1:numgain
-            for II=1:numreg
-            %     regval = 0.1; % To be determined
-                regval = regval_arr(II);
-                %
-
-                Greg = [Gsplit;regval*eye(Nact^2)]; 
-
-                % Compute the  new actuator heights
-                usII = -1*pinv(Greg)*Eabreg; % 
-                usII = usII*gain_arr(III);
-                %
-                if max(usII)<20
-%                     us_total2 = vec2mat(usII+us_total,12);
-%                     us_total2 = us_total2';
-
-                    if ~EFCSMF
-                        hcstt_UpdateMultiDM(+(us_total+usII)*poke_amp/1e-9)
-                        im_cam = hcstt_TakeCamImage(true,false,tint)-backgroundCam;
-                        curr_reg_arr(countreg) = mean(im_cam(find(Q)));
-                    else
-                        curr_reg_arr(countreg) = hcstt_GetIntensityFIU(+(us_total+usII)*poke_amp/1e-9,5 ,backgroundSMF);
-                    end
-                end
-                countreg = countreg + 1;
-            end
+        if regularizationMarx && k==11
+            regval = 1e-6;
+            gainval = 1;  
+            regularizationMarxOn = true;
+        elseif regularizationMarx && k==16
+            regval = 1e-4;
+            gainval = 1;  
+            regularizationMarxOn = true;
+        elseif regularizationMarx && k==21
+            regval = 1e-8;
+            gainval = 1;  
+            regularizationMarxOn = true;
+        elseif regularizationMarx && k==25
+            regularizationMarxOn = false;
         end
-        [mi,ind_min] = min(curr_reg_arr);
-        [ind_minreg,ind_mingain] = ind2sub([numreg,numgain],ind_min);
-        regval = regval_arr(ind_minreg);
-        gainval = gain_arr(ind_mingain);
+        if ~regularizationMarxOn
+            numreg = 7;
+            numgain = 5;
+            regval_arr = logspace(-8,-1,numreg);
+            gain_arr = linspace(0.1,4,numgain);
+            curr_reg_arr = zeros(1,numreg*numgain) + nan;
+            countreg = 1;
+            for III=1:numgain
+                for II=1:numreg
+                %     regval = 0.1; % To be determined
+                    regval = regval_arr(II);
+                    %
 
+                    Greg = [Gsplit;regval*eye(Nact^2)]; 
+
+                    % Compute the  new actuator heights
+                    usII = -1*pinv(Greg)*Eabreg; % 
+                    usII = usII*gain_arr(III);
+                    %
+                    if max(usII)<20
+    %                     us_total2 = vec2mat(usII+us_total,12);
+    %                     us_total2 = us_total2';
+
+                        if ~EFCSMF
+                            hcstt_UpdateMultiDM(+(us_total+usII)*poke_amp/1e-9)
+                            im_cam = hcstt_TakeCamImage(true,false,tint)-backgroundCam;
+                            curr_reg_arr(countreg) = mean(im_cam(find(Q)));
+                        else
+                            curr_reg_arr(countreg) = hcstt_GetIntensityFIU(+(us_total+usII)*poke_amp/1e-9,5 ,backgroundSMF);
+                        end
+                    end
+                    countreg = countreg + 1;
+                end
+            end
+            [mi,ind_min] = min(curr_reg_arr);
+            [ind_minreg,ind_mingain] = ind2sub([numreg,numgain],ind_min);
+            regval = regval_arr(ind_minreg);
+            gainval = gain_arr(ind_mingain);
+        end
         regvalfin_arr(k) = regval;
         gainvalfin_arr(k) = gainval;
 
