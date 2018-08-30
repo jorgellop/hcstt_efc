@@ -54,7 +54,7 @@ y_cent_cam = info.y_cent_cam;
 
 wfin_noerrors = complex(ones(N, N), zeros(N, N)) ;
 wfin_noerrors(RHO > apRad) = 0;
-background = info.background;
+background = info.backgroundCam;
 
 num_DM_shapes = 5;
 ph_arr = linspace(0, 3/2*pi, num_DM_shapes);

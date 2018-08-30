@@ -21,7 +21,7 @@ rng(3);
 wfin_noerrors = complex(ones(N, N), zeros(N, N)) ;
 wfin_noerrors(RHO > apRad) = 0;
 
-
+backgroundSMF = info.backgroundSMF;
 % x_fib = info.x_fib; % Position of the fiber on the image plane. (lambda_0/D)
 % y_fib = info.y_fib;
 
@@ -105,7 +105,7 @@ for KK = 1:num_DM_shapes
     
     % Measure the intensity out of the fiber for the positive probe
 
-    int_plus = hcstt_GetIntensityFIU((+dm_actuators_mat0(:) + us_total)/1e-9,5);  % dm_actuators_mat is a 12^2x1 array with the actuators heights in nm
+    int_plus = hcstt_GetIntensityFIU((+dm_actuators_mat0(:) + us_total)/1e-9,5,backgroundSMF);  % dm_actuators_mat is a 12^2x1 array with the actuators heights in nm
 %     hcstt_UpdateMultiDM((+dm_actuators_mat0 + us_total)/1e-9)
 %     figure(111)
 %     im_cam = hcstt_TakeCamImage(false,true,0.7);
@@ -119,7 +119,7 @@ for KK = 1:num_DM_shapes
     %
     
     % Measure the intensity out of the fiber for the positive probe
-    int_minus = hcstt_GetIntensityFIU((-dm_actuators_mat0(:) + us_total)/1e-9,5); % dm_actuators_mat is a 12^2x1 array with the actuators heights in nm
+    int_minus = hcstt_GetIntensityFIU((-dm_actuators_mat0(:) + us_total)/1e-9,5,backgroundSMF); % dm_actuators_mat is a 12^2x1 array with the actuators heights in nm
     %
     
     %

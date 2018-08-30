@@ -30,7 +30,7 @@ global cam img Xcr Ycr CExp s drv_inf flat itr Idat himg
 %Exposure time for camera
 CExp = 2;%ms
 %Define the center of the  cropping
-Xcr = 442;
+Xcr = 467;
 Ycr = 531;
 
 % cam = Initialize_Camera(CExp);

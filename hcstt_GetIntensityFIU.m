@@ -1,7 +1,7 @@
 %{
 %}
 
-function [int] = hcstt_GetIntensityFIU(us,num_avg)
+function [int] = hcstt_GetIntensityFIU(us,num_avg,backgroundCam)
 
 global cam img Xcr Ycr CExp s drv_inf flat itr Idat himg pm_scale
 
@@ -16,9 +16,9 @@ for II = 1:num_avg
         pm_scale=hcstt_getPMNewLevel(reading,pm_scale);
         level = log10(pm_scale) - 4;
         gain = prod(gain_arr(level0:level-1))/10^(numel(gain_arr(level0:level-1)));
-        int_arr(II) = s.inputSingleScan/pm_scale*gain;
+        int_arr(II) = s.inputSingleScan/pm_scale*gain-backgroundCam;
     else
-        int_arr(II) = s.inputSingleScan/pm_scale*gain;
+        int_arr(II) = s.inputSingleScan/pm_scale*gain-backgroundCam;
     end
     pause(0.1)
 end

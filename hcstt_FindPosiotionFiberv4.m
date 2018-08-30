@@ -6,7 +6,7 @@
 %
 % Nikita Klimovich, Jorge Llop - Dec 14, 2017
 
-function [actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(actxc_est,ang_est)
+function [actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(actxc_est,ang_est,info)
 % Set lower and upper bounds of range to look
 num_actxc = 7;
 num_ang = 7;
@@ -25,9 +25,9 @@ for II=1:num_actxc
     for JJ=1:num_ang
         ang = ang_arr(JJ);
         for KK=1:3
-            DM_Command = hcstt_DMMapSin(30,ang,actxc,ph_arr(KK));
+            DM_Command = hcstt_DMMapSin(70,ang,actxc,ph_arr(KK));
     %         amp_max = DE_supMinimizer_3(par0);
-            amp_max = hcstt_GetIntensityFIU(DM_Command,3);
+            amp_max = hcstt_GetIntensityFIU(DM_Command,3,info.backgroundSMF);
             mat(II,JJ) = mat(II,JJ)+amp_max;
         end
         amp_max = mat(II,JJ);
