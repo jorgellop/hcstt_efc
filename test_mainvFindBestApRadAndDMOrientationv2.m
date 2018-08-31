@@ -11,22 +11,18 @@ addpath(genpath('utils'),genpath('export_scripts'));
 
 % use_fiber = true;
 % normal_EFC = false;
-EFCSMF = true;
+EFCSMF = false;
 debug = true;
-regularizationMarx = true;
+regularizationMarx = false;
 
-label = '_Fiber_3config_regMarx_Aug30';
+label = '_RegEFC_3config_Aug30';
 outDir = ['output',filesep,'EFC_wFiber_LabDemonstration',label,filesep];
 mkdir(outDir);
 
 load('output\calibrateDM_Aug01'); % actxcDM, angDm vs pix on camera info
 
 % Initialize all devices
-if EFCSMF
-    hcstt_Initialize(true);
-else
-    hcstt_Initialize(false);
-end
+hcstt_Initialize(true);
 
 % load('benchModelPixelPitchMatching_scaleR_apRad_May7')
 N = 2^10;
@@ -34,6 +30,7 @@ N = 2^10;
 [X,Y] = meshgrid(-N/2:N/2-1); 
 xvals = X(1,:);yvals = Y(:,1);
 [THETA,RHO] = cart2pol(X,Y);
+tint0 = 15;
 tint = 15;
 
 
@@ -72,7 +69,7 @@ info.Nact = Nact;
 
 % Total Power to normilize model Gu and intensity from the fiber. Need of
 % normalization factor
-totalPowerEFCSMF = 1.7e-06;
+totalPowerEFCSMF = 2.2331e-06;
 normPowerEFCSMF = totalPowerEFCSMF/3.8185e10;
 peakIntEFCSMF = totalPowerEFCSMF;
 load('BenchModelNormalization_laserSource_0829')
@@ -80,6 +77,9 @@ normPowerRegEFC = normPower_normalization*tint/tint_normalization;%0.00055;%
 % normPowerRegEFC = 9e-5;
 peakIntRegEFC = peakInt_normalization*tint/tint_normalization;
 info.normPowerRegEFC = normPowerRegEFC;
+load('calibrationMMF_Aug30')
+totalPowerMMF0 = totalPowerMMF_calibration*tint/tint_MMF_calibration;
+totalPowerMMF = totalPowerMMF0;
 if EFCSMF
     info.p2v_dm_sensing = 12;
     info.normPower = normPowerEFCSMF;
@@ -139,9 +139,9 @@ info.x_cent_cam = x_cent_cam;
 info.y_cent_cam = y_cent_cam;
 
 %Find position of fiber
-x_fib_est = 2.56;
+x_fib_est = 2.575;
 [actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(x_fib_est,0,info);
-% actxc_fib = 2.575;
+% actxc_fib = 2.59;
 % ang_fib = 0;
 info.actxc_fib = actxc_fib;
 info.ang_fib = ang_fib;
@@ -206,14 +206,15 @@ wf2 = prescription_DM1toImage_compact_vFiberCoupling_broadband( wf1, zeros(N,N),
 % totalPower = sum(abs(wf2_crop(:)).^2);
 
 [Xcam,Ycam] = meshgrid(-y_cent_cam+1:Ncam-y_cent_cam,-x_cent_cam+1:Ncam-x_cent_cam); 
-% [THETAcam, RHOcam] = cart2pol(Xcam,Ycam);
+[THETAcam, RHOcam] = cart2pol(Xcam - x_fib_pix,Ycam- y_fib_pix);
 % q_pix = 1;
 % info.q_pix = q_pix;
 % Q = zeros(Ncam,Ncam);
 % Q = and(Xcam >= (x_fib_pix-q_pix ), Xcam <=  (x_fib_pix+q_pix ));
 % Q = and(Q, Ycam >= -(q_pix) );
 % Q = and(Q, Ycam <= (q_pix) );
-[Q,totalPowerCam] = hcstt_GenerateDHMask(wf2,Xcam,Ycam,info);
+% [Q,totalPowerMMF] = hcstt_GenerateDHMask(wf2,Xcam,Ycam,info);
+Q = exp(-(RHOcam/(diamMMF/2*lambdaOverD)).^100);
 info.Q = Q;
 % IWA_pix = (x_fib_pix-q_pix );
 % OWA_pix = (x_fib_pix+q_pix );
@@ -224,13 +225,19 @@ info.Q = Q;
 % Q4G = and(Xcam4G >= (x_fib_pix-q_pix ), Xcam4G <=  (x_fib_pix+q_pix ));
 % Q4G = and(Q4G, Ycam4G >= -(q_pix) );
 % Q4G = and(Q4G, Ycam4G <= (q_pix) ); % 60deg keystone about x-axis
-Q4G = hcstt_GenerateDHMask(wf2,Xcam4G,Ycam4G,info);
+% Q4G = hcstt_GenerateDHMask(wf2,Xcam4G,Ycam4G,info);
+[THETA4G_fib,RHO4G_fib] = cart2pol(Xcam4G - x_fib_pix ,Ycam4G - y_fib_pix);
+Q4G = exp(-(RHO4G_fib/(diamMMF/2*lambdaOverD)).^100);
 num_Q = numel(find(Q));
 info.num_Q = num_Q;
 info.Q4G = Q4G;
 
 for posII=1:3
 %         [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvBlindSearch(N,apRad,posII);
+
+    tint = tint0;
+    totalPowerMMF = totalPowerMMF0;
+    
     [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvFindBestDMOrientation(N,apRad,posII);
     info.posDM_x = posDM_x;
     info.posDM_y = posDM_y;
@@ -247,7 +254,11 @@ for posII=1:3
     us_total = zeros(Nact^2,1); % Initialize the fractional stroke changes to zero
     poke_amp = 1e-9; % Initialize the poke amplitude
 
-    maxits = 35; % maximum number of EFC iterations allowed
+    if regularizationMarx
+        maxits = 35; % maximum number of EFC iterations allowed
+    else
+        maxits = 6;
+    end
     Gcount = 0; % counter for number of times G matrix was used
     Gcountmin = 10; % Minimum number of times to use a G matrix
     curr_coupl_SMF = 1;
@@ -260,7 +271,8 @@ for posII=1:3
     int_est_in_DH = []; % Array to keep track of dark hole irradiance 
     coupl_SMF_in_DH = [];
     coupl_MMF_in_DH = [];
-
+    tint_arr = [];
+    totalPowerMMF_arr = [];
     % Run EFC iterations 
     for k = 1:maxits
         counttot = counttot+1;
@@ -370,7 +382,23 @@ for posII=1:3
         coupl_SMF_in_DH = [coupl_SMF_in_DH, curr_coupl_SMF];
         int_in_DH = [int_in_DH, mean(im_cam(find(Q)))];
         coupl_MMF_in_DH = [coupl_MMF_in_DH, sum(sum(im_cam.*Q))];
+        tint_arr = [tint_arr,tint];
+        totalPowerMMF_arr = [totalPowerMMF_arr,totalPowerMMF];
         
+        figure(203);
+        plot(1:k,log10(coupl_MMF_in_DH./totalPowerMMF_arr))
+        hold on
+        plot(1:k,log10(coupl_SMF_in_DH/peakIntEFCSMF))
+        hold off
+        xlabel('Iteration')
+        ylabel('Raw Contrast (Log Scale)')
+        if EFCSMF
+            title(['EFC -  (Suppression of ',num2str(coupl_SMF_in_DH(1)/coupl_SMF_in_DH(k)),')'])
+        else
+            title(['EFC -  (Suppression of ',num2str(int_in_DH(1)/int_in_DH(k)),')'])
+        end
+        legend(['Pix box'],'SMF');
+
         if EFCSMF
             curr_int_est =  sum(sum(abs(Eab).^2))/numel(lam_fracs);
 
@@ -392,7 +420,7 @@ for posII=1:3
             title('Estimated Int vs Measured Int')
 
             im_camaux = im_cam;
-            im_camaux(Q) = nan;
+            im_camaux(find(Q)) = nan;
             figure(223)
             imagesc(im_camaux(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20))
             axis image
@@ -475,8 +503,8 @@ for posII=1:3
 
                         if ~EFCSMF
                             hcstt_UpdateMultiDM(+(us_total+usII)*poke_amp/1e-9)
-                            im_cam = hcstt_TakeCamImage(true,false,tint)-backgroundCam;
-                            curr_reg_arr(countreg) = mean(im_cam(find(Q)));
+                            im_camreg = hcstt_TakeCamImage(true,false,tint)-backgroundCam;
+                            curr_reg_arr(countreg) = mean(im_camreg(find(Q)));
                         else
                             curr_reg_arr(countreg) = hcstt_GetIntensityFIU(+(us_total+usII)*poke_amp/1e-9,5 ,backgroundSMF);
                         end
@@ -528,6 +556,14 @@ for posII=1:3
         if k==5 && curr_suppression<50
             break
         end
+        if min(im_cam(find(Q)))<20
+            disp('  Changing exposure time')
+        	tint = tint*2;
+            info.tint = tint;
+            totalPowerMMF = totalPowerMMF_calibration*tint/tint_MMF_calibration;
+        end
+        
+
     end
 %% update one last time with new solution
 
@@ -595,6 +631,8 @@ for posII=1:3
     prev_coupl_SMF = curr_coupl_SMF;
     curr_coupl_SMF = hcstt_GetIntensityFIU(+(us_total)*poke_amp/1e-9,10,backgroundSMF );%sum(abs(Eab).^2/totalPower)/numel(lam_fracs);
     coupl_SMF_in_DH = [coupl_SMF_in_DH, curr_coupl_SMF];
+    tint_arr = [tint_arr,tint];
+    totalPowerMMF_arr = [totalPowerMMF_arr,totalPowerMMF];
 
     if EFCSMF
         curr_int_est =  sum(sum(abs(Eab).^2))/numel(lam_fracs);
@@ -616,7 +654,7 @@ for posII=1:3
 
     fig0 = figure(301);
 %     plot(1:k,log10(int_in_DH/peakIntRegEFC))
-    plot(1:k,log10(coupl_MMF_in_DH/totalPowerCam))
+    plot(1:k,log10(coupl_MMF_in_DH./totalPowerMMF_arr))
     hold on
     plot(1:k,log10(coupl_SMF_in_DH/peakIntEFCSMF))
     hold off
@@ -667,7 +705,7 @@ for posII=1:3
 
     save([info.outDir,'data_intvsit_dmshapes_',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.mat'],...
         'us_total','im_cam_crop','int_in_DH','coupl_SMF_in_DH','peakIntEFCSMF','peakIntRegEFC',...
-        'totalPowerCam','int_est_in_DH','regvalfin_arr','gainvalfin_arr');
+        'totalPowerMMF','int_est_in_DH','regvalfin_arr','gainvalfin_arr');
 end
 %     hcstt_test_plotCamImage(im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20), [outDir,'CamImage_final','_DMconfig',num2str(posII)], [41,41] );
 

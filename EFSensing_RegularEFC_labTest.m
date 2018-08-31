@@ -119,7 +119,7 @@ for KK = 1:num_DM_shapes
         im_camII = hcstt_TakeCamImage(true,false,tint)-background;
         im_cam = im_cam + im_camII/25;
     end
-    int_regular_plus = im_cam(Q);
+    int_regular_plus = im_cam(find(Q));
     sz = size(im_cam);
 
     figure(1111)
@@ -131,7 +131,7 @@ for KK = 1:num_DM_shapes
     drawnow;
     figure(1112)
     im_camaux=im_cam;
-    im_camaux(Q) = 0;
+    im_camaux(find(Q)) = 0;
     imagesc(im_camaux(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20))
     title(['Probing phase ',num2str(KK)])
     axis image
@@ -146,7 +146,7 @@ for KK = 1:num_DM_shapes
         im_camII = hcstt_TakeCamImage(true,false,tint)-background;
         im_cam = im_cam + im_camII/25;
     end
-    int_regular_minus = im_cam(Q);
+    int_regular_minus = im_cam(find(Q));
     %
     
     %
@@ -156,7 +156,7 @@ for KK = 1:num_DM_shapes
 %     H_mat(KK, :) = 4*[sum(sum(Gu_re.*fibermode0)),sum(sum(Gu_im.*fibermode0))];
     Gu_re2 = Gu_re(N/2-sz(1)/2:N/2+sz(1)/2-1,N/2-sz(2)/2:N/2+sz(2)/2-1);
     Gu_im2 = Gu_im(N/2-sz(1)/2:N/2+sz(1)/2-1,N/2-sz(2)/2:N/2+sz(2)/2-1);
-    H_regular_mat(KK, :, :) = 4*[Gu_re2(Q4G),Gu_im2(Q4G)];
+    H_regular_mat(KK, :, :) = 4*[Gu_re2(find(Q4G)),Gu_im2(find(Q4G))];
     %     
 end
 x_regular_hat = zeros(2,num_Q);

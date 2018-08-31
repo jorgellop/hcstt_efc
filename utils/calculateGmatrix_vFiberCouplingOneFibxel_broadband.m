@@ -68,8 +68,8 @@ EFCSMF = info.EFCSMF;
                     bm_lam = bm(:,:,index);
                     bm0_lam = bm0_lam(N/2-sz_imcam(1)/2:N/2+sz_imcam(1)/2-1,N/2-sz_imcam(2)/2:N/2+sz_imcam(2)/2-1);
                     bm_lam = bm_lam(N/2-sz_imcam(1)/2:N/2+sz_imcam(1)/2-1,N/2-sz_imcam(2)/2:N/2+sz_imcam(2)/2-1);
-                    FP0_col = [FP0_col;(lambda0/lam)*bm0_lam(Q)];
-                    FP_col = [FP_col;(lambda0/lam)*bm_lam(Q)];
+                    FP0_col = [FP0_col;(lambda0/lam)*bm0_lam(find(Q))];
+                    FP_col = [FP_col;(lambda0/lam)*bm_lam(find(Q))];
                 end
                     %                 FP_colSMF = [FP_colSMF;(lambda0/lam)*FP(Q(:,:,index)==1).*fibermode0JJ_col/sqrt(normIc)];
 %                 FP_colSMF0 = [FP_colSMF0;(lambda0/lam)*FP0(Q(:,:,index)==1).*fibermode0JJ_col/sqrt(normIc)];

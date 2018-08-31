@@ -26,7 +26,7 @@ wf2 = prescription_DM1toImage_compact_vFiberCoupling_broadband( wf1, zeros(N,N),
 sidepix = 30;
 wf2_crop = wf2(N/2-sidepix+1:N/2+sidepix+1,N/2-sidepix+1:N/2+sidepix+1);
 totalPower = sum(abs(wf2_crop(:)).^2);
-throughput = 0.8119;
+throughput = 0.5;
 throughput_arr = [];
 numtry  = 35;
 diam_arr = linspace(0.5,3,numtry);
@@ -37,12 +37,34 @@ end
 % [THETA_fib,RHO_fib] = cart2pol(X - info.x_fib_pix ,Y - info.y_fib_pix);
 diamII = interp1(throughput_arr,diam_arr,throughput);
 % Q = exp(-(RHO_fib/(diamII/2*lambdaOverD)).^100);
-Qcent = exp(-(RHO/(diamII/2*lambdaOverD)).^100);
+
 % totalPowerCam = sum(sum(abs(wf2.*Qcent).^2))*info.normPowerRegEFC;
 %%
 hcstt_Initialize(false)
 take_background = true;
 Ncam = 400;
+
+% Find Center of camera image
+im_cam = zeros(Ncam,Ncam);
+tint_findCenter = 0.05;
+for II=1:25
+    im_camII = hcstt_TakeCamImage(true,false,tint_findCenter);
+    im_cam = im_cam + im_camII/25;
+    pause(0.1)
+end
+im_camaux = im_cam;
+im_camaux(190:210,190:210) = im_camaux(190:210,190:210)*1000;
+[ma,ind_ma] = max(im_camaux(:));
+[x_cent_cam,y_cent_cam] = ind2sub(size(im_camaux),ind_ma);
+if max(im_camII(:))>240
+    disp('Find Center image saturated')
+    hcstt_DisconnectDevices
+    return
+end
+
+[Xcam,Ycam] = meshgrid(-y_cent_cam+1:Ncam-y_cent_cam,-x_cent_cam+1:Ncam-x_cent_cam); 
+[THETAcam, RHOcam] = cart2pol(Xcam,Ycam);
+Qcent = exp(-(RHOcam/(diamII/2*lambdaOverD)).^100);
 
 tint = 0.05;
 keeptrying = true;
@@ -71,16 +93,31 @@ while keeptrying
     end
     DH = im_cam(find(Qcent));
     if min(DH)<10
-        tint = tint*2;
-    elseif max(DH)>200
-        tint = tint/2;
+        tint = tint*2
+    elseif max(DH)>220
+        tint = tint/2
     else
-        kepptrying = false;
+        keeptrying = false;
     end
 end
 
 totalPowerMMF_calibration = sum(DH);
 tint_MMF_calibration = tint;
 diamMMF = diamII;
+powerSettingCalibrationMMF = 0.31;
+
+load('LaserSourceCalibration_0829')
+
+powerSetting_experiment = 3;
+p1 = interp1(powerSource_arr,powerCam_arr,powerSettingCalibrationMMF);
+if powerSetting_experiment>max(powerSource_arr)
+    p2 = interp1(powerSource_arr,powerCam_arr,powerSetting_experiment,'linear','extrap');
+else
+    p2 = interp1(powerSource_arr,powerCam_arr,powerSetting_experiment);
+end
+normSource = p2/p1;
+
+totalPowerMMF_calibration = totalPowerMMF_calibration*normSource;
+
 save('calibrationMMF_Aug30','totalPowerMMF_calibration','tint_MMF_calibration','diamMMF')
 hcstt_DisconnectDevices()
