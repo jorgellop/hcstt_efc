@@ -3,43 +3,48 @@
 % 
 %
 % Jorge Llop - Aug 30, 2018
-N = 1024;
-lambdaOverD = N/apRad/2;
-[X,Y] = meshgrid(-N/2:N/2-1); 
-[THETA,RHO] = cart2pol(X,Y);
-
-info.useGPU = false;
-info.RHO = RHO;
-info.THETA = THETA;
-info.N = N;
-info.lam_arr =  635e-9;
-info.useApodizer = false;
-info.useGPU = false; 
-info.FPM = exp(1i*4*THETA);
-info.apRad = 142;
-info.lambdaOverD = lambdaOverD;
-info.LPM = exp(-(RHO/(0.85*apRad)).^1000);
-
-wf1 = exp( -(RHO/(apRad)).^100 );
-wf2 = prescription_DM1toImage_compact_vFiberCoupling_broadband( wf1, zeros(N,N), false, info);
-
-sidepix = 30;
-wf2_crop = wf2(N/2-sidepix+1:N/2+sidepix+1,N/2-sidepix+1:N/2+sidepix+1);
-totalPower = sum(abs(wf2_crop(:)).^2);
-throughput = 0.5;
-throughput_arr = [];
-numtry  = 35;
-diam_arr = linspace(0.5,3,numtry);
-for JJ = 1:numtry
-     Q_pixJJ = exp( -(RHO/(diam_arr(JJ)/2*lambdaOverD)).^100 );
-     throughput_arr = [throughput_arr; sum(sum(abs(wf2.*Q_pixJJ).^2))/totalPower];
-end
-% [THETA_fib,RHO_fib] = cart2pol(X - info.x_fib_pix ,Y - info.y_fib_pix);
-diamII = interp1(throughput_arr,diam_arr,throughput);
+% N = 1024;
+% lambdaOverD = N/apRad/2;
+% [X,Y] = meshgrid(-N/2:N/2-1); 
+% [THETA,RHO] = cart2pol(X,Y);
+% 
+% info.useGPU = false;
+% info.RHO = RHO;
+% info.THETA = THETA;
+% info.N = N;
+% info.lam_arr =  635e-9;
+% info.useApodizer = false;
+% info.useGPU = false; 
+% info.FPM = exp(1i*4*THETA);
+% info.apRad = 142;
+% info.lambdaOverD = lambdaOverD;
+% info.LPM = exp(-(RHO/(0.85*apRad)).^1000);
+% 
+% wf1 = exp( -(RHO/(apRad)).^100 );
+% wf2 = prescription_DM1toImage_compact_vFiberCoupling_broadband( wf1, zeros(N,N), false, info);
+% 
+% sidepix = 30;
+% wf2_crop = wf2(N/2-sidepix+1:N/2+sidepix+1,N/2-sidepix+1:N/2+sidepix+1);
+% totalPower = sum(abs(wf2_crop(:)).^2);
+% throughput = 0.5;
+% throughput_arr = [];
+% numtry  = 35;
+% diam_arr = linspace(0.5,3,numtry);
+% for JJ = 1:numtry
+%      Q_pixJJ = exp( -(RHO/(diam_arr(JJ)/2*lambdaOverD)).^100 );
+%      throughput_arr = [throughput_arr; sum(sum(abs(wf2.*Q_pixJJ).^2))/totalPower];
+% end
+% % [THETA_fib,RHO_fib] = cart2pol(X - info.x_fib_pix ,Y - info.y_fib_pix);
+% diamII = interp1(throughput_arr,diam_arr,throughput);
 % Q = exp(-(RHO_fib/(diamII/2*lambdaOverD)).^100);
 
 % totalPowerCam = sum(sum(abs(wf2.*Qcent).^2))*info.normPowerRegEFC;
 %%
+N = 1024;
+lambdaOverD = N/apRad/2;
+fiberDiam = 2*0.71; % Fiber diam. (lambda_0/D)
+fiberDiam_pix = (fiberDiam*lambdaOverD);
+
 hcstt_Initialize(false)
 take_background = true;
 Ncam = 400;
@@ -64,7 +69,9 @@ end
 
 [Xcam,Ycam] = meshgrid(-y_cent_cam+1:Ncam-y_cent_cam,-x_cent_cam+1:Ncam-x_cent_cam); 
 [THETAcam, RHOcam] = cart2pol(Xcam,Ycam);
-Qcent = exp(-(RHOcam/(diamII/2*lambdaOverD)).^100);
+Qcent = exp(-(RHOcam/(fiberDiam_pix/2)).^100);
+fibermodeCam0 = sqrt(2/(pi*(fiberDiam_pix/2)^2))* ...
+        exp(-(RHOcam/(fiberDiam_pix/2)).^2);
 
 tint = 0.05;
 keeptrying = true;
@@ -92,6 +99,7 @@ while keeptrying
         pause(0.1)
     end
     DH = im_cam(find(Qcent));
+    DHPicGauss = im_cam.*fibermodeCam0;
     if min(DH)<10
         tint = tint*2
     elseif max(DH)>220
@@ -102,13 +110,18 @@ while keeptrying
 end
 
 totalPowerMMF_calibration = sum(DH);
+totalPowerPixGauss_calibration = sum(DHPicGauss(:));
 tint_MMF_calibration = tint;
-diamMMF = diamII;
-powerSettingCalibrationMMF = 0.31;
+% diamMMF = diamII;
 
-load('LaserSourceCalibration_0829')
+% powerSettingCalibrationMMF = 0.55;
+powerSettingCalibrationMMF = 16;
 
-powerSetting_experiment = 3;
+% load('LaserSourceCalibration_0829')
+load('SuperKCamCalibration_0803')
+
+% powerSetting_experiment = 3;
+powerSetting_experiment = 50;
 p1 = interp1(powerSource_arr,powerCam_arr,powerSettingCalibrationMMF);
 if powerSetting_experiment>max(powerSource_arr)
     p2 = interp1(powerSource_arr,powerCam_arr,powerSetting_experiment,'linear','extrap');
@@ -118,6 +131,8 @@ end
 normSource = p2/p1;
 
 totalPowerMMF_calibration = totalPowerMMF_calibration*normSource;
+totalPowerPixGauss_calibration = totalPowerPixGauss_calibration*normSource;
 
-save('calibrationMMF_Aug30','totalPowerMMF_calibration','tint_MMF_calibration','diamMMF')
+save('calibrationMMFPixGauss_broadband_Aug30','totalPowerMMF_calibration','totalPowerPixGauss_calibration','tint_MMF_calibration')
+% save('calibrationMMFPixGauss_laserSource_Aug30','totalPowerMMF_calibration','totalPowerPixGauss_calibration','tint_MMF_calibration')
 hcstt_DisconnectDevices()

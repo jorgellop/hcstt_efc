@@ -11,11 +11,22 @@ addpath(genpath('utils'),genpath('export_scripts'));
 
 % use_fiber = true;
 % normal_EFC = false;
-EFCSMF = false;
+EFCSMF = true;
 debug = true;
 regularizationMarx = false;
+broadband = true;
 
-label = '_RegEFC_3config_Aug30';
+if EFCSMF
+    EFCmethod = 'EFCSMF';
+else
+    EFCmethod = 'RegEFC';
+end
+if ~broadband
+    source = 'laserSource';
+else
+    source = 'broadband';
+end
+label = ['_',EFCmethod,'_',source,'_1config_Aug31'];
 outDir = ['output',filesep,'EFC_wFiber_LabDemonstration',label,filesep];
 mkdir(outDir);
 
@@ -30,8 +41,12 @@ N = 2^10;
 [X,Y] = meshgrid(-N/2:N/2-1); 
 xvals = X(1,:);yvals = Y(:,1);
 [THETA,RHO] = cart2pol(X,Y);
-tint0 = 15;
-tint = 15;
+if broadband
+    tint0 = 15;
+else
+    tint0 = 7;
+end
+tint = tint0;
 
 
 lambda0 = 635e-9;
@@ -69,17 +84,35 @@ info.Nact = Nact;
 
 % Total Power to normilize model Gu and intensity from the fiber. Need of
 % normalization factor
-totalPowerEFCSMF = 2.2331e-06;
+if ~broadband
+    totalPowerEFCSMF = 2.2331e-06;
+else
+    totalPowerEFCSMF = 5.9992e-06;
+end
 normPowerEFCSMF = totalPowerEFCSMF/3.8185e10;
 peakIntEFCSMF = totalPowerEFCSMF;
-load('BenchModelNormalization_laserSource_0829')
-normPowerRegEFC = normPower_normalization*tint/tint_normalization;%0.00055;%
-% normPowerRegEFC = 9e-5;
-peakIntRegEFC = peakInt_normalization*tint/tint_normalization;
-info.normPowerRegEFC = normPowerRegEFC;
-load('calibrationMMF_Aug30')
+
+if ~EFCSMF
+    if ~broadband
+        load('BenchModelNormalization_laserSource_0829')
+    else
+        load('BenchModelNormalization_broadband_0830')
+    end
+    normPowerRegEFC = normPower_normalization*tint/tint_normalization;%0.00055;%
+    % normPowerRegEFC = 9e-5;
+    peakIntRegEFC = peakInt_normalization*tint/tint_normalization;
+    info.normPowerRegEFC = normPowerRegEFC;
+end
+
+if ~broadband
+    load('calibrationMMFPixGauss_broadband_Aug30')
+else
+    load('calibrationMMFPixGauss_laserSource_Aug30')
+end
 totalPowerMMF0 = totalPowerMMF_calibration*tint/tint_MMF_calibration;
 totalPowerMMF = totalPowerMMF0;
+totalPowerPixGauss0 = totalPowerPixGauss_calibration*tint/tint_MMF_calibration;
+totalPowerPixGauss = totalPowerPixGauss0;
 if EFCSMF
     info.p2v_dm_sensing = 12;
     info.normPower = normPowerEFCSMF;
@@ -139,10 +172,10 @@ info.x_cent_cam = x_cent_cam;
 info.y_cent_cam = y_cent_cam;
 
 %Find position of fiber
-x_fib_est = 2.575;
-[actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(x_fib_est,0,info);
-% actxc_fib = 2.59;
-% ang_fib = 0;
+x_fib_est = 2.5;
+% [actxc_fib,ang_fib] = hcstt_FindPosiotionFiberv4(x_fib_est,0,info);
+actxc_fib = 2.5;
+ang_fib = 0;
 info.actxc_fib = actxc_fib;
 info.ang_fib = ang_fib;
 %Calculate position in pixels
@@ -170,28 +203,16 @@ info.sz_imcam = sz_imcam;
 hcstt_test_plotCamImage(im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20), 'Camera Image - Flat DM',[outDir,'CamImage_flatDM'], [41,41] );
 
 counttot = 0;
-tic
-% num_apRad = numel(apRad_arr);
-
-% info.LPM = exp(-(RHO/(0.85*apRad)).^1000);
 
 apRad = 142;%apRad_arr(apRII);
-%     scaleR = scaleR_arr(apRII);
 lambdaOverD = N/apRad/2; % lambda/D (samples) 
-
-% Model of the fiber mode shape
-fiberDiam = 2*0.71; % Fiber diam. (lambda_0/D)
-fiberDiam_pix = (fiberDiam*lambdaOverD);
-[THETA_fib,RHO_fib] = cart2pol(X - x_fib_pix ,Y - y_fib_pix);
-fibermode0 = sqrt(2/(pi*(fiberDiam_pix/2)^2))* ...
-        exp(-(RHO_fib/(fiberDiam_pix/2)).^2);
-info.fibermode0 = fibermode0;
-
-info.fiberDiam = fiberDiam;
 info.apRad = apRad;
 info.lambdaOverD = lambdaOverD;
 
 info.LPM = exp(-(RHO/(0.85*apRad)).^1000);
+
+fiberDiam = 2*0.71; % Fiber diam. (lambda_0/D)
+fiberDiam_pix = (fiberDiam*lambdaOverD);
 
 % Compute Q
 % wfin_noerrors = complex(ones(N, N), zeros(N, N)) ;
@@ -214,7 +235,7 @@ wf2 = prescription_DM1toImage_compact_vFiberCoupling_broadband( wf1, zeros(N,N),
 % Q = and(Q, Ycam >= -(q_pix) );
 % Q = and(Q, Ycam <= (q_pix) );
 % [Q,totalPowerMMF] = hcstt_GenerateDHMask(wf2,Xcam,Ycam,info);
-Q = exp(-(RHOcam/(diamMMF/2*lambdaOverD)).^100);
+Q = exp(-(RHOcam/(fiberDiam_pix/2)).^100);
 info.Q = Q;
 % IWA_pix = (x_fib_pix-q_pix );
 % OWA_pix = (x_fib_pix+q_pix );
@@ -227,16 +248,26 @@ info.Q = Q;
 % Q4G = and(Q4G, Ycam4G <= (q_pix) ); % 60deg keystone about x-axis
 % Q4G = hcstt_GenerateDHMask(wf2,Xcam4G,Ycam4G,info);
 [THETA4G_fib,RHO4G_fib] = cart2pol(Xcam4G - x_fib_pix ,Ycam4G - y_fib_pix);
-Q4G = exp(-(RHO4G_fib/(diamMMF/2*lambdaOverD)).^100);
+Q4G = exp(-(RHO4G_fib/(fiberDiam_pix/2)).^100);
 num_Q = numel(find(Q));
 info.num_Q = num_Q;
 info.Q4G = Q4G;
 
+% Model of the fiber mode shape
+[THETA_fib,RHO_fib] = cart2pol(X - x_fib_pix ,Y - y_fib_pix);
+fibermode0 = sqrt(2/(pi*(fiberDiam_pix/2)^2))* ...
+        exp(-(RHO_fib/(fiberDiam_pix/2)).^2);
+fibermodeCam0 = sqrt(2/(pi*(fiberDiam_pix/2)^2))* ...
+        exp(-(RHOcam/(fiberDiam_pix/2)).^2);
+info.fibermode0 = fibermode0;
+
+info.fiberDiam = fiberDiam;
+
 for posII=1:3
-%         [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvBlindSearch(N,apRad,posII);
 
     tint = tint0;
     totalPowerMMF = totalPowerMMF0;
+    totalPowerPixGauss = totalPowerPixGauss0;
     
     [posDM_x,posDM_y,ac_spac] = hcstt_PositionDMActuatorsvFindBestDMOrientation(N,apRad,posII);
     info.posDM_x = posDM_x;
@@ -257,10 +288,10 @@ for posII=1:3
     if regularizationMarx
         maxits = 35; % maximum number of EFC iterations allowed
     else
-        maxits = 6;
+        maxits = 15;
     end
     Gcount = 0; % counter for number of times G matrix was used
-    Gcountmin = 10; % Minimum number of times to use a G matrix
+    Gcountmin = 6; % Minimum number of times to use a G matrix
     curr_coupl_SMF = 1;
     curr_int = 1e9;
     recalc_G = true; % Initialize the flag to re-calculate the G matrix
@@ -273,6 +304,8 @@ for posII=1:3
     coupl_MMF_in_DH = [];
     tint_arr = [];
     totalPowerMMF_arr = [];
+    totalPowerPixGauss_arr = [];
+    coupl_pixGauss_in_DH = []';
     % Run EFC iterations 
     for k = 1:maxits
         counttot = counttot+1;
@@ -382,8 +415,10 @@ for posII=1:3
         coupl_SMF_in_DH = [coupl_SMF_in_DH, curr_coupl_SMF];
         int_in_DH = [int_in_DH, mean(im_cam(find(Q)))];
         coupl_MMF_in_DH = [coupl_MMF_in_DH, sum(sum(im_cam.*Q))];
+        coupl_pixGauss_in_DH = [coupl_pixGauss_in_DH, sum(sum(im_cam.*fibermodeCam0))];
         tint_arr = [tint_arr,tint];
         totalPowerMMF_arr = [totalPowerMMF_arr,totalPowerMMF];
+        totalPowerPixGauss_arr = [totalPowerPixGauss_arr,totalPowerPixGauss];
         
         figure(203);
         plot(1:k,log10(coupl_MMF_in_DH./totalPowerMMF_arr))
@@ -446,15 +481,15 @@ for posII=1:3
         if(recalc_G)
             Gcount = 0;
             disp('Calculating the G matrix for EFC.')
-%                 if k==1
-%                     load('output\G.mat')
+%                 if k==1 && posII==1
+%                     load('output\G_it1_Aug31.mat')
 %                 else
             if ~EFCSMF
                 G = calculateGmatrix_vFiberCouplingOneFibxel_broadband( wf1, surf_DM10, Q4G, Nact, ac_spac, poke_amp, infl, lambda0, N , info);
             else
                 G = calculateGmatrix_vFiberCouplingOneFibxel_broadband( wf1, surf_DM10, [], Nact, ac_spac, poke_amp, infl, lambda0, N , info);
             end
-            save(['output\G.mat'],'G');
+            save(['output\G_pos',num2str(posII),'.mat'],'G');
 %                 end
             recalc_G = false;
         end
@@ -553,14 +588,15 @@ for posII=1:3
         fprintf('\n')
         fprintf([' Current Suppression ', num2str(curr_suppression)])
         fprintf('\n')
-        if k==5 && curr_suppression<50
-            break
-        end
-        if min(im_cam(find(Q)))<20
+%         if k==5 && curr_suppression<50
+%             break
+%         end
+        if min(im_cam(find(Q)))<3
             disp('  Changing exposure time')
         	tint = tint*2;
             info.tint = tint;
             totalPowerMMF = totalPowerMMF_calibration*tint/tint_MMF_calibration;
+            totalPowerPixGauss = totalPowerPixGauss_calibration*tint/tint_MMF_calibration;
         end
         
 
@@ -628,11 +664,13 @@ for posII=1:3
     drawnow;
     int_in_DH = [int_in_DH, mean(im_cam(find(Q)))];
     coupl_MMF_in_DH = [coupl_MMF_in_DH, sum(sum(im_cam.*Q))];
+    coupl_pixGauss_in_DH = [coupl_pixGauss_in_DH, sum(sum(im_cam.*fibermodeCam0))];
     prev_coupl_SMF = curr_coupl_SMF;
     curr_coupl_SMF = hcstt_GetIntensityFIU(+(us_total)*poke_amp/1e-9,10,backgroundSMF );%sum(abs(Eab).^2/totalPower)/numel(lam_fracs);
     coupl_SMF_in_DH = [coupl_SMF_in_DH, curr_coupl_SMF];
     tint_arr = [tint_arr,tint];
     totalPowerMMF_arr = [totalPowerMMF_arr,totalPowerMMF];
+    totalPowerPixGauss_arr = [totalPowerPixGauss_arr,totalPowerPixGauss_calibration*tint/tint_MMF_calibration];
 
     if EFCSMF
         curr_int_est =  sum(sum(abs(Eab).^2))/numel(lam_fracs);
@@ -654,19 +692,24 @@ for posII=1:3
 
     fig0 = figure(301);
 %     plot(1:k,log10(int_in_DH/peakIntRegEFC))
-    plot(1:k,log10(coupl_MMF_in_DH./totalPowerMMF_arr))
+    if EFCSMF
+        plot(1:k,log10(coupl_MMF_in_DH./totalPowerMMF_arr))
+    else
+        plot(1:k,log10(int_in_DH/peakIntRegEFC))
+    end
     hold on
     plot(1:k,log10(coupl_SMF_in_DH/peakIntEFCSMF))
+    plot(1:k,log10(coupl_pixGauss_in_DH./totalPowerPixGauss_arr))
     hold off
     xlabel('Iteration')
     ylabel('Raw Contrast (Log Scale)')
     if EFCSMF
-        title(['EFC -  (Suppression of ',num2str(coupl_SMF_in_DH(1)/coupl_SMF_in_DH(k)),')'])
+        title(['EFCSMF -  (Suppression of ',num2str(coupl_SMF_in_DH(1)/coupl_SMF_in_DH(k)),')'])
     else
-        title(['EFC -  (Suppression of ',num2str(int_in_DH(1)/int_in_DH(k)),')'])
+        title(['Regular EFC -  (Suppression of ',num2str(int_in_DH(1)/int_in_DH(k)),')'])
     end
 %     pixbox = q_pix*2+1;
-    legend(['Pix box'],'SMF');
+    legend(['Pix aperture'],'SMF','Gaussian filtering on intensity over pixels');
     export_fig([outDir,'MeanInt_vs_it',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
     close(fig0);
 
@@ -686,7 +729,7 @@ for posII=1:3
 
     if ~EFCSMF
         fig0 = figure(4);
-        imagesc(intaux(Ncam/2-20:Ncam/2+20,Ncam/2-20:Ncam/2+20))
+        imagesc(im_cam(Ncam/2-20:Ncam/2+20,Ncam/2-20:Ncam/2+20))
         axis image
         title(['Simulated image to see where Q falls DMconfig',num2str(posII),' apRad',num2str(apRad),])
         export_fig([outDir,'SimulatedImageWhereQFalls',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
@@ -702,10 +745,38 @@ for posII=1:3
     colorbar
     export_fig([outDir,'CamImageFinalImage',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
     im_cam_crop = im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20);
+    figure(7);
+    im_camtintdiv2 = hcstt_TakeCamImage(true,false,tint/2)-backgroundCam;
+    imagesc(im_camtintdiv2(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20))
+    axis image
+    title(['Final Image DMconfig',num2str(posII),'apRad',num2str(apRad),])
+    colorbar
+    export_fig([outDir,'CamImageFinalImage',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
+    im_camtintdiv2_crop = im_camtintdiv2(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20);
+    figure(8);
+    im_camtintdiv3 = hcstt_TakeCamImage(true,false,tint/3)-backgroundCam;
+    imagesc(im_camtintdiv2(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20))
+    axis image
+    title(['Final Image DMconfig',num2str(posII),'apRad',num2str(apRad),])
+    colorbar
+    export_fig([outDir,'CamImageFinalImage',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.png'],'-r300');
+    im_camtintdiv3_crop = im_camtintdiv3(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20);
 
+    if ~EFCSMF
     save([info.outDir,'data_intvsit_dmshapes_',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.mat'],...
-        'us_total','im_cam_crop','int_in_DH','coupl_SMF_in_DH','peakIntEFCSMF','peakIntRegEFC',...
-        'totalPowerMMF','int_est_in_DH','regvalfin_arr','gainvalfin_arr');
+        'us_total','im_cam_crop','int_in_DH','coupl_SMF_in_DH','coupl_MMF_in_DH',...
+        'peakIntRegEFC','peakIntEFCSMF','totalPowerPixGauss_arr','coupl_pixGauss_in_DH',...
+        'totalPowerMMF_arr','int_est_in_DH','regvalfin_arr','gainvalfin_arr',...
+        'im_cam','im_camtintdiv2','im_camtintdiv2_crop','im_camtintdiv3','im_camtintdiv3_crop',...
+        'actxc_fib','ang_fib','Q');
+    else
+    save([info.outDir,'data_intvsit_dmshapes_',label,'_DMconfig',num2str(posII),'_apRad',num2str(apRad),'.mat'],...
+        'us_total','im_cam_crop','int_in_DH','coupl_SMF_in_DH','coupl_MMF_in_DH',...
+        'peakIntEFCSMF','totalPowerPixGauss_arr','coupl_pixGauss_in_DH',...
+        'totalPowerMMF_arr','int_est_in_DH','regvalfin_arr','gainvalfin_arr',...
+        'im_cam','im_camtintdiv2','im_camtintdiv2_crop','im_camtintdiv3','im_camtintdiv3_crop',...
+        'actxc_fib','ang_fib','Q');
+    end
 end
 %     hcstt_test_plotCamImage(im_cam(x_cent_cam-20:x_cent_cam+20,y_cent_cam-20:y_cent_cam+20), [outDir,'CamImage_final','_DMconfig',num2str(posII)], [41,41] );
 

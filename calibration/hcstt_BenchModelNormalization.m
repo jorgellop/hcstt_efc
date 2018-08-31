@@ -20,9 +20,9 @@ apRad = 68;
 tint_normalization = 0.05;
 powerSetting = 16;
 
-label = '_0816';
-outDir = ['output',filesep,'test_Normalization',label,filesep];
-mkdir(outDir);
+% label = '_0816';
+% outDir = ['output',filesep,'test_Normalization',label,filesep];
+% mkdir(outDir);
 
 Nact = 12;
 sidepix = 30;
