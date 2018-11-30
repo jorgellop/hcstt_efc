@@ -10,7 +10,7 @@ clear all;
 close all;
 addpath(genpath('utils'),genpath('export_scripts'));
 
-label = '_test_Nov291';
+label = '_test_Nov29';
 outDir = ['output',filesep,'EFC_wFiber_LabDemonstration',label,filesep];
 mkdir(outDir);
 
