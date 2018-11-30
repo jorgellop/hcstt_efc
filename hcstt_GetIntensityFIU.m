@@ -5,9 +5,12 @@ function [int] = hcstt_GetIntensityFIU(us,num_avg,backgroundCam)
 
 global cam img Xcr Ycr CExp s drv_inf flat itr Idat himg pm_scale
 
+%Load the gain calibration
 load(['output',filesep,'NIPhotodiodeGainCalibration'])
+%Update DM with us, ie the shape
 hcstt_UpdateMultiDM(us)
-level0 = 2;
+
+level0 = 2; % The gain is calibrated wrt level 2
 pause(0.05)
 
 for II = 1:num_avg

@@ -5,9 +5,10 @@ function [ G ] = calculateGmatrix_vFiberCouplingOneFibxel_broadband( bmb4dm, sur
     power_factor4poke = 1;
     poke_amp = poke_amp/power_factor4poke;
     
+    if isfield(info,'posDM_x')
     posDM_x = info.posDM_x;
     posDM_y = info.posDM_y;
-
+    end 
     sz_imcam = info.sz_imcam;
     normPower = info.normPower;
 %     normIc = info.normIc;
@@ -42,11 +43,16 @@ EFCSMF = info.EFCSMF;
             count = count + 1;
             disp(['Poking actuator ',num2str(count),'/',num2str(Nact^2)]);
             DM_strokes = zeros(N);
-
-%             xpos = round(N/2+1+(ix-Nact/2-0.5)*ac_spac);
-%             ypos = round(N/2+1+(iy-Nact/2-0.5)*ac_spac);
+            
+            if ~isfield(info,'posDM_x')
+                xpos = round(N/2+1+(ix-Nact/2-0.5)*ac_spac);
+                ypos = round(N/2+1+(iy-Nact/2-0.5)*ac_spac);
+            else
+                xpos = round(posDM_x(ix));
+                ypos = round(posDM_y(iy));
+            end
     
-            DM_strokes(round(posDM_x(ix)),round(posDM_y(iy))) = poke_amp;
+            DM_strokes(xpos,ypos) = poke_amp;
             delta_surf_DM = conv2(DM_strokes,infl,'same');            
             
             % Propagate to image plane using compact model using poked DM

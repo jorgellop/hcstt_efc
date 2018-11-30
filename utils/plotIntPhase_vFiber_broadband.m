@@ -27,8 +27,11 @@ for II = 1:numOfWavelengths
     iGu_BB = iGu_BB + abs(Gu_FP_lam).^2/info.normI/numOfWavelengths;
 end
 fiberDiam_pix = info.fiberDiam_pix;
+fiberDiam_pix = fiberDiam_pix(round(numOfWavelengths/2));
 x_fib_pix = info.x_fib_pix;
 y_fib_pix = info.y_fib_pix;
+x_fib_pix = x_fib_pix(round(numOfWavelengths/2));
+y_fib_pix = y_fib_pix(round(numOfWavelengths/2));
 wf_trim = iWf_BB(N/2+y_fib_pix-fiberDiam_pix/2+1:N/2+y_fib_pix+fiberDiam_pix/2,N/2+x_fib_pix-fiberDiam_pix/2+1:N/2+x_fib_pix+fiberDiam_pix/2);
 % wf_trim = wf_trim/sqrt(info.normI);
 Gu_trim = iGu_BB(N/2+y_fib_pix-fiberDiam_pix/2+1:N/2+y_fib_pix+fiberDiam_pix/2,N/2+x_fib_pix-fiberDiam_pix/2+1:N/2+x_fib_pix+fiberDiam_pix/2);
@@ -39,11 +42,13 @@ ph_Gu = angle(Gu0);
 wffib = wf(N/2+y_fib_pix-fiberDiam_pix/2+1:N/2+y_fib_pix+fiberDiam_pix/2,N/2+x_fib_pix-fiberDiam_pix/2+1:N/2+x_fib_pix+fiberDiam_pix/2, round(numOfWavelengths/2));
 ph_wf = angle(wffib);
 
+full_namemat = [info.outDir,'IntPhaseOverFibxel_it',num2str(k),'.mat'];
 full_path = [info.outDir,'IntPhaseOverFibxel_it',num2str(k),'.png'];
 
 fig0 = figure('visible','off','color','w');
 subplot(2,2,3)
-imagesc([x_fib_pix-fiberDiam_pix/2+1:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,[x_fib_pix-fiberDiam_pix/2+1:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,ph_wf);
+imagesc([x_fib_pix-fiberDiam_pix/2+1:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
+    [y_fib_pix-fiberDiam_pix/2+1:y_fib_pix+fiberDiam_pix/2]/lambdaOverD,ph_wf);
 colorbar; 
 axis image;
 set(gca,'FontSize',7)
@@ -55,7 +60,7 @@ ylabel('y (lam/D)','FontSize', 7);
 subplot(2,2,1)
 imagesc([x_fib_pix-fiberDiam_pix/2+1:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
     [y_fib_pix-fiberDiam_pix/2+1:y_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
-    log10(wf_trim),[info.minint info.maxint]);
+    log10(wf_trim),[-9 info.maxint]);
 colorbar; 
 axis image;
 set(gca,'FontSize',7)
@@ -86,6 +91,7 @@ ylabel('y (lam/D)','FontSize', 7);
 
 
 export_fig(full_path,'-r300');
+save(full_namemat,'wf_trim','ph_wf','x_fib_pix','y_fib_pix');
 close(fig0);
 
 end
