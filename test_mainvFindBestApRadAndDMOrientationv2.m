@@ -134,7 +134,7 @@ Ncam = 400;
 if(take_background)
     prompt = 'Take out light. Continue? ';
     x = input( prompt );
-    im_cam = zeros(400,400);
+    im_cam = zeros(Ncam,Ncam);
     for II=1:15
         im_camII = hcstt_TakeCamImage(true,false,tint);
         im_cam = im_cam + im_camII/15;
