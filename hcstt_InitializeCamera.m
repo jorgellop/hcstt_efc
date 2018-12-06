@@ -30,8 +30,8 @@ global cam img Xcr Ycr CExp s drv_inf flat itr Idat himg
 %Exposure time for camera
 CExp = 2;%ms
 %Define the center of the  cropping
-Xcr = 463;
-Ycr = 517;
+Xcr = 454;
+Ycr = 344;
 
 % cam = Initialize_Camera(CExp);
     NET.addAssembly(...

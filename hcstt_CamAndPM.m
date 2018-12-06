@@ -53,8 +53,8 @@ for i=1:1
         cam.Acquisition.Freeze(true);
 
         %Take Data; Enable state returns to 0 automaticaly when 50 sample done
-        reading = s.inputSingleScan;
-        intensity = reading/pm_scale
+%         reading = s.inputSingleScan;
+        intensity = hcstt_GetIntensityFIU(zeros(12,12),1,0);%reading/pm_scale
 
         % %_______Process and Save Image Data______
         % %Extract image from RAM to array in Matlab
