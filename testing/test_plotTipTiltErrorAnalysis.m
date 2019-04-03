@@ -18,7 +18,7 @@ szfig = [1200 530];
 fig0 = figure('visible','off','color','w','pos',[10 10 szfig(1) szfig(2)]);
 numOfWavelengths=31;
 for II=1:4
-    for k=1:5
+    for k=1:4
         handle=subtightplot(2,4,II);
         if II==2; plot(lam_arr*1e9,log10(S_in_DH_fib_mat2_direction2And4(k,:,1)),'LineWidth',3);
         elseif II==4; plot(lam_arr*1e9,log10(S_in_DH_fib_mat2_direction2And4(k,:,2)),'LineWidth',3);
@@ -39,7 +39,7 @@ for II=1:4
         %     plot(1:k,log10(coupl_MMF_in_DH))
 %         xlabel('Wavelength [nm]','fontsize',fontsz)
         set(gca,'XTickLabel',[])
-        if II==1; ylabel('log(SMF Raw Contrast)','fontsize',fontsz); else
+        if II==1; ylabel('log(SMF Normalized Intensity)','fontsize',fontsz); else
             set(gca,'YTickLabel',[]); end
         set(gca,'FontSize',fontsz);
         axis([ lam_arr(1)*1e9 lam_arr(numOfWavelengths)*1e9 -12 -5])
@@ -79,7 +79,7 @@ for II=1:4
 figure(fig0)
 end
 for II=5:8
-    for k=1:5
+    for k=1:4
         handle=subtightplot(2,4,II);
 %         handle=subplot(2,4,II);
         xlabel('Wavelength [nm]','fontsize',fontsz)
@@ -101,7 +101,7 @@ for II=5:8
         %     hold on
         %     plot(1:k,log10(coupl_MMF_in_DH))
         
-        if II==5; ylabel('log(SMF Raw Contrast)','fontsize',fontsz); else
+        if II==5; ylabel('log(SMF Normalized Intensity)','fontsize',fontsz); else
             set(gca,'YTickLabel',[]); end
         set(gca,'FontSize',fontsz);
         axis([ lam_arr(1)*1e9 lam_arr(numOfWavelengths)*1e9 -12 -6])

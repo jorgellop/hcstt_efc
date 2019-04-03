@@ -5,12 +5,13 @@ close all
 lambdaOverD = 8;
 fontsz = 16;
 fiberDiam_pix = 1.4*8;
+%%
 fig0 = figure('visible','off','color','w','pos',[10 10 1100 530]);
 for II=1:4
-    subplot(2,4,II)
+    p=subplot(2,4,II)
     load([path_regEFC,'IntPhaseOverFibxel_it',num2str(II)])
-    imagesc([x_fib_pix-fiberDiam_pix/2+1:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
-        [y_fib_pix-fiberDiam_pix/2+1:y_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
+    imagesc([x_fib_pix-fiberDiam_pix/2:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
+        [y_fib_pix-fiberDiam_pix/2:y_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
         ph_wf,[-pi pi]);
     axis image;
     set(gca,'FontSize',fontsz);
@@ -22,13 +23,15 @@ for II=1:4
     if II==1; ylabel({'\fontsize{21}Conventional EFC';'\fontsize{18}\itAngular separation (\lambda/D)'});end
 end
 hp4 = get(subplot(2,4,4),'Position')
+% figure(fig0)
+
 % h = colorbar('Position', [hp4(1)+hp4(3)+0.01  hp4(2)+0.065  0.035  hp4(4)-0.132]);
 % ylabel(h, 'Log(Raw Contrast)')
 for II=1:4
     subplot(2,4,II+4)
     load([path_SMF,'IntPhaseOverFibxel_it',num2str(II)])
-    imagesc([x_fib_pix-fiberDiam_pix/2+1:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
-        [y_fib_pix-fiberDiam_pix/2+1:y_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
+    imagesc([x_fib_pix-fiberDiam_pix/2:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
+        [y_fib_pix-fiberDiam_pix/2:y_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
         ph_wf,[-pi pi]);
     axis image;
     set(gca,'FontSize',fontsz)
@@ -39,20 +42,30 @@ for II=1:4
 
     colormap('hsv');
     if II==1; ylabel({'\fontsize{21}Fiber-based EFC';'\fontsize{18}\itAngular separation (\lambda/D)'});end
+        hold on
+    r= 0.71;
+    x = -3;
+    y = 0;
+    th = 0:pi/50:2*pi;
+    xunit = r * cos(th) + x;
+    yunit = r * sin(th) + y;
+    h = plot(xunit, yunit,'w','LineWidth',2);
+    hold off
+
 end
 hp8 = get(subplot(2,4,8),'Position');
 h = colorbar('Position', [hp4(1)+hp4(3)+0.01  hp8(2)  0.035  hp4(4)*2+0.132]);
 ylabel(h, 'Phase (Rad)')
 figure(fig0)
-export_fig('ZoomIn_Ph_Oct4.png','-r300');
+% export_fig('ZoomIn_Ph_Oct4.png','-r300');
 
 %%
 fig0 = figure('visible','off','color','w','pos',[10 10 1100 530]);
 for II=1:4
     subplot(2,4,II)
     load([path_regEFC,'IntPhaseOverFibxel_it',num2str(II)])
-    imagesc([x_fib_pix-fiberDiam_pix/2+1:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
-        [y_fib_pix-fiberDiam_pix/2+1:y_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
+    imagesc([x_fib_pix-fiberDiam_pix/2:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
+        [y_fib_pix-fiberDiam_pix/2:y_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
         log10(wf_trim),[-7.5 -4.5]);
     axis image;
     set(gca,'FontSize',fontsz);
@@ -68,8 +81,8 @@ hp4 = get(subplot(2,4,4),'Position')
 for II=1:4
     subplot(2,4,II+4)
     load([path_SMF,'IntPhaseOverFibxel_it',num2str(II)])
-    imagesc([x_fib_pix-fiberDiam_pix/2+1:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
-        [y_fib_pix-fiberDiam_pix/2+1:y_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
+    imagesc([x_fib_pix-fiberDiam_pix/2:x_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
+        [y_fib_pix-fiberDiam_pix/2:y_fib_pix+fiberDiam_pix/2]/lambdaOverD,...
         log10(wf_trim),[-7.5 -4.5]);
     axis image;
     set(gca,'FontSize',fontsz)
@@ -78,11 +91,20 @@ for II=1:4
     xlabel('\itAngular separation (\lambda/D)','FontSize',fontsz);
     set(gca,'tickdir','out','TickLength',[0.03, 0.01]) 
     if II==1; ylabel({'\fontsize{21}Fiber-based EFC';'\fontsize{18}\itAngular separation (\lambda/D)'});end
+    hold on
+    r= 0.71;
+    x = -3;
+    y = 0;
+    th = 0:pi/50:2*pi;
+    xunit = r * cos(th) + x;
+    yunit = r * sin(th) + y;
+    h = plot(xunit, yunit,'w','LineWidth',2);
+    hold off
 end
 hp8 = get(subplot(2,4,8),'Position');
 h = colorbar('Position', [hp4(1)+hp4(3)+0.01  hp8(2)  0.035  hp4(4)*2+0.132]);
-ylabel(h, 'Log(Raw Contrast)')
+ylabel(h, 'Log(Normalized Intensity)')
 figure(fig0)
-export_fig('ZoomIn_Int_Oct4.png','-r300');
+export_fig('ZoomIn_Int_Jan29.png','-r300');
 
 

@@ -53,7 +53,7 @@ function plotBBpsf4Paper( bm, full_path, info )
     fig0 = figure('visible','off','color','w');
     imagesc(xvals*bm_lam.dx/(bm_lam.wl*bm_lam.fr),yvals*bm_lam.dx/(bm_lam.wl*bm_lam.fr),log10(iPSF_BB));
     hcb = colorbar; %colormap(hot(256));
-    ylabel(hcb, 'Raw contrast')
+    ylabel(hcb, 'Log(Normalized Intensity)')
     axis image;
     caxis([cmapmin cmapmax]);
     axis([-axismax axismax -axismax axismax]);

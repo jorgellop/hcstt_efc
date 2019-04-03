@@ -50,7 +50,7 @@ close(fig0)
 %%
 load('normI4Paper')
 % load([pathSimuSMF,'bm'])
-load([pathSimuSMF,'bm'])
+load([pathSimuRegEFC,'bm'])
 % load(['/Users/jllopsay/Documents/MATLAB/HCSTR_fiber_proper_model/output/HCST_FIU_broadband_12actrng6_RegularEFC_Oct01_EFCwDM1_VC4_N1024_circ_LSout0.9_lam6.35e-07_BW10_surf_error_PSDfit/EFC_fiberConsistentWLab_IWA3.5_OWA4.5/','bm'])
 info.xvals = xvals;
 info.yvals = yvals; 
@@ -59,5 +59,5 @@ info.numOfWavelengths = 3;
 info.normI = normI;
 info.N = N;
 
-plotBBpsf4Paper(bm,'BBPSF_SimuEFCSMF',info)
-% plotBBpsf4Paper(bm,'BBPSF_SimuRegEFC',info)
+% plotBBpsf4Paper(bm,'BBPSF_SimuEFCSMF_Jan29',info)
+plotBBpsf4Paper(bm,'BBPSF_SimuRegEFC_Jan29',info)
