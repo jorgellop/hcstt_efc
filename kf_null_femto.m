@@ -42,8 +42,8 @@ close all
 %clear
 
 %load calibration files
-addpath('/Functions/')
-addpath('/Calibrations/')
+addpath(genpath('Functions'))
+addpath(genpath('Calibrations'))
 load('Calibrations/flat.mat');
 load('Calibrations/FlatMap.mat');
 load('Calibrations/angle_cal');

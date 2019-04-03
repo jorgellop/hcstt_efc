@@ -1,33 +1,4 @@
 %{
-DM Surface Mapping Function: Sinusoidal
-- Translated and adapted from Jerry Xuan Python Code
-    -maps.py
-- h values are deformation in nanometers
-*** Assumes N=12 for mirror grid size
-
-******************************************************
-* Outputs various items depending on "out" argument
-    *** All return h matrix
-    out     Outputs
-    0       display h, plot h, create .txt file
-    1       display h
-    2       plot h
-    3       displayh, plot h
-    4       create .txt file
-    #       ONLY RETURNS h
-- Arguments:
-    ho          = Max poke height
-    q           = angle of sinusoid
-    xo          = actuators per cycle
-    alp         = phase delay
-    out         = output selector
-    filename    = name for save file (.txt)
-- Returns:
-    h           = Surface Map as Matrix of Deformations in nm
-******************************************************
-
-Compiled By:    Daniel Echeverri
-Last Modified:  08/04/2016
 %}
 function h = hcstt_DMMapSin(ho, q, xo, alp)
 
