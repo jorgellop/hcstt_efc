@@ -1,3 +1,4 @@
+
 function plotBBpsf4Paper( bm, full_path, info )
 %plotBBpsf Makes a nice plot of the broadband psf
 %   Detailed explanation goes here
@@ -53,7 +54,7 @@ function plotBBpsf4Paper( bm, full_path, info )
     fig0 = figure('visible','off','color','w');
     imagesc(xvals*bm_lam.dx/(bm_lam.wl*bm_lam.fr),yvals*bm_lam.dx/(bm_lam.wl*bm_lam.fr),log10(iPSF_BB));
     hcb = colorbar; %colormap(hot(256));
-    ylabel(hcb, 'Log(Normalized Intensity)')
+    ylabel(hcb, 'Raw contrast')
     axis image;
     caxis([cmapmin cmapmax]);
     axis([-axismax axismax -axismax axismax]);

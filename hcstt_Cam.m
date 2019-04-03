@@ -6,7 +6,7 @@ global cam img Xcr Ycr CExp s drv_inf flat itr himg pm_scale
 
 addpath(genpath('utils'),genpath('export_scripts'));
 
-hcstt_Initialize(true)
+hcstt_Initialize(false)
     
 disp('Flattening DM');
 
@@ -53,8 +53,6 @@ for i=1:1
         cam.Acquisition.Freeze(true);
 
         %Take Data; Enable state returns to 0 automaticaly when 50 sample done
-%         reading = s.inputSingleScan;
-        intensity = hcstt_GetIntensityFIU(zeros(12,12),1,0);%reading/pm_scale
 
         % %_______Process and Save Image Data______
         % %Extract image from RAM to array in Matlab
@@ -67,7 +65,6 @@ for i=1:1
         % %Draw cropped flat image
         set(himg, 'CData', Idat(:,:,1));
         axis tight equal off;
-        title(['Intensity: ',num2str(intensity)]);
 
         drawnow;
     end

@@ -168,8 +168,7 @@ for II=steps
     K_p = 1;
     
     %control input calculation
-%     u_k = -[(x_k_p(1)-estimation(1)); K_p*(x_k_p(2)-estimation(2))]; %New control vector is the change in the null solution for the DM shape
-    u_k = -[(x_k_p(1)-estimation(1)); K_p*(x_k_p(2)-estimation(2))]; %New control vector is the change in the null solution for the DM shape
+    u_k = [(x_k_p(1)-estimation(1)); K_p*(x_k_p(2)-estimation(2))]; %New control vector is the change in the null solution for the DM shape
     
     %convert control input and actuate DM
 %     par_in = [x_k_p(2), ang_fib, actxc_fib, x_k_p(1)];
@@ -217,12 +216,12 @@ plot(steps,intensity_arr/normI,steps,intensityKF_arr/normI)
 title('SNKF')
 ylabel('Raw Contrast')
 xlabel('Step')
-legend('From measurement','With KF')
 figure(304)
 plot(steps,log10(intensity_arr/normI))
-title('SN from measurement')
-ylabel('Raw Contrast (Log scale)')
+title('SNKF')
+ylabel('Raw Contrast (L')
 xlabel('Step')
+legend('From measurement','With KF')
 figure(301)
 plot(steps,measurements(:,1),steps,estimations(:,1))
 legend('measurement','estimation')
