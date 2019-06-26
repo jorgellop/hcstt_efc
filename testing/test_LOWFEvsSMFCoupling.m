@@ -39,17 +39,17 @@ coupl0 = abs(sum(sum(wfF.*fibermode0))).^2/power_tot;
 numZernikes=11;
 numAmp = 100;
 minAmp = 0;
-maxAmp = 0.5; %waves
+maxAmp = 0.3; %waves
 wfe_arr = linspace(minAmp,maxAmp,numAmp);
 fig0 = figure('visible','off','color','none');
 plot(wfe_arr,ones(1,numAmp)*coupl0,'LineStyle','--','Color','k')
 hold on
 % good_ind = [2,4,5,7,9,11];
-good_ind = [2,3];
+good_ind = [2];
 
 %Initial Defocus
-Z00 = generateZernike( 6, apRad, RHO, THETA  );
-Z00 = Z00*100/1600;
+% Z00 = generateZernike( 6, apRad, RHO, THETA  );
+Z00 = 0;%Z00*100/1600;
 for II = 2:numZernikes
     if ismember(II,good_ind)
         Z0 =generateZernike( II, apRad, RHO, THETA  );
@@ -60,37 +60,51 @@ for II = 2:numZernikes
             wfP = (wf0).*(exp(1i*2*pi*Z));
             wfF = myfft2(wfP);
             power_tot = sum(sum(abs(wfF).^2));
+%             figure(111)
+%             imagesc(abs(wfF).^2)
             coupl = [coupl, abs(sum(sum(wfF.*fibermode0))).^2/power_tot];
         end
-        plot(wfe_arr,coupl,'LineWidth',4)
+        plot(wfe_arr*4,coupl,'LineWidth',4)
         hold on
     end
 end
-for II = 2:numZernikes
-    if ismember(II,good_ind)
-        Z0 =generateZernike( II, apRad, RHO, THETA45  );
-        coupl = [];
-        for JJ=1:numAmp
-            wfe = wfe_arr(JJ);
-            Z = Z0*wfe + Z00;
-            wfP = (wf0).*(exp(1i*2*pi*Z));
-            wfF = myfft2(wfP);
-            power_tot = sum(sum(abs(wfF).^2));
-            coupl = [coupl, abs(sum(sum(wfF.*fibermode0))).^2/power_tot];
-        end
-        plot(wfe_arr,coupl,'LineWidth',4)
-        hold on
-    end
-end
-title(['SMF Coupling w/ LOWFE - Initial AstigY 100 nmRMS'],'Interpreter','latex')
-xlabel('WFE [wavesRMS]','Interpreter','latex');
+% for II = 2:numZernikes
+%     if ismember(II,good_ind)
+%         Z0 =generateZernike( II, apRad, RHO, THETA45  );
+%         coupl = [];
+%         for JJ=1:numAmp
+%             wfe = wfe_arr(JJ);
+%             Z = Z0*wfe + Z00;
+%             wfP = (wf0).*(exp(1i*2*pi*Z));
+%             wfF = myfft2(wfP);
+%             power_tot = sum(sum(abs(wfF).^2));
+%             coupl = [coupl, abs(sum(sum(wfF.*fibermode0))).^2/power_tot];
+%         end
+%         plot(wfe_arr,coupl,'LineWidth',4)
+%         hold on
+%     end
+% end
+% title(['SMF Coupling w/ LOWFE - Initial AstigY 100 nmRMS'],'Interpreter','latex')
+% xlabel('WFE [wavesRMS]','Interpreter','latex');
+xlabel('TT [$\lambda$/D]','Interpreter','latex');
 ylabel('SMF coupling','Interpreter','latex');
 %         xlim([0 2])
 ylim([0 1])
 set(gca,'FontSize',20)
 % lgd = legend('No WFE','Tip/Tilt','Defocus','Astigmatism','Coma','Trefoil','Spherical');
-lgd = legend('No WFE','Tip/Tilt X','Tip/Tilt Y','Tip/Tilt X+45deg','Tip/Tilt Y+45deg');
-title(lgd,'Zernike Modes')
+% lgd = legend('No WFE','Tip/Tilt X','Tip/Tilt Y','Tip/Tilt X+45deg','Tip/Tilt Y+45deg');
+lgd = legend('No WFE','Tip/Tilt');
+% title(lgd,'Zernike Modes')
 hold off
 figure(fig0)
-export_fig(['output/SMFCoupling_LOWFE_AstigY100nmrms.png']);
+export_fig(['output/SMFCoupling_LOWFE_TT_Apr29.png']);
+
+%%
+wfe = 1;
+Z = Z0*wfe ;
+wfP = (wf0).*(exp(1i*2*pi*Z));
+wfF = myfft2(wfP);
+im = abs(wfF).^2;
+figure(111)
+imagesc(im)
+axis image
