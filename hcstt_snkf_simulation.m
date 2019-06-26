@@ -134,12 +134,14 @@ flat_new = 0;
 intensity_arr(1) = hcstt_GetIntensityFIU(zeros(12,12),5,backgroundSMF);
 intensityKF_arr(1) = hcstt_GetIntensityFIU(zeros(12,12),5,backgroundSMF);
 
-for II=steps
+for II=steps %KF loop (II==index)
     disp(['Step ',num2str(II),'/',num2str(num_steps)])
     int_arr = zeros(n_pairs,1);
     
+    
     H_k = eye(2); %observation matrix
-    for n=1:1:n_pairs
+    %% Speckle Nulling
+    for n=1:1:n_pairs %SN loop
         % par_probe = [probe_amp, ang_fib, actxc_fib, probe_phase(n)];
         dm_actuators_mat0 = hcstt_DMMapSin(probe_amp, ang_fib, actxc_fib, probe_phase(n));
         intensity_raw = hcstt_GetIntensityFIU(dm_actuators_mat0(:),5,backgroundSMF);  % dm_actuators_mat is a 12^2x1 array with the actuators heights in nm
@@ -156,33 +158,8 @@ for II=steps
     xlabel('phase')
     ylabel('Intensity')
     pause(.5)
-
-    %calculate phase and amplitude from measurements
-%     t  = 1:n_pairs;                                                 % Time Vector
-%     sig  = intensity;                                                 % Signal Vector
-%     Ts = mean(diff(t));                                         % Sampling Time
-% %     Fs = 1/Ts;                                                  % Sampling Frequency
-% %     Fn = Fs/2;                                                  % Nyquist Frequency
-%     L  = length(sig);
-%     fts = fft(sig)/L;                                             % Normalised Fourier Transform
-% %     Fv = linspace(0, 1, fix(L/2)+1)*Fn;                         % Frequency Vector
-%     Iv = 1:length(Fv);                                          % Index Vector
-%     amp_fts = abs(fts(1:3))*2;                                   % Spectrum Amplitude
-%     phs_fts = angle(fts(1:3));                                   % Spectrum Phase
-%     if phs_fts(2)<0
-%        phs_fts(2) = phs_fts(2)+2*pi;
-%     end
-%     amp_meas = amp_fts(1)/2;
-    %look up closest DM amplitude value
-%     [c, index] = min(abs(amp_meas-amp_cal(:,2)));
-%     %if less than lowest calibrated value, interpolate
-%     if index <= 2
-%         amp_solved = amp_meas/amp_cal(2,2)*amp_cal(2,1);
-%     else
-%         amp_solved = amp_cal(index,1);
-%     end
-%     phase_solved = phs_fts(2);
     
+    % Finde phase
     yu = max(int_arr);
     yl = min(int_arr);
     yr = (yu-yl);                               % Range of ‘y’
@@ -195,8 +172,9 @@ for II=steps
     sinefit = fit(s,probe_phase_fine);
     [mi,ind_mi] = min(sinefit);
     
-    phase_solved = probe_phase_fine(ind_mi);
+    phase_solved = probe_phase_fine(ind_mi); %SN solution to phase
     
+    % Find Amplitude
     int_arr = zeros(numamptry,1);
     for JJ=1:numamptry
         dm_actuators_mat0 = hcstt_DMMapSin(amptry_arr(JJ), ang_fib, actxc_fib, phase_solved);
@@ -220,11 +198,11 @@ for II=steps
     quadfit = fit(s,amptry_fine);
     [mi,ind_mi] = min(quadfit);
 
-    amp_solved = amptry_fine(ind_mi);
+    amp_solved = amptry_fine(ind_mi); %SN solution to amplitude
     
     z_k = [phase_solved; amp_solved]; %measurement
 
-    %Kalman filter
+    %% Kalman filter
     x_k_p = x_k_m+P_k_m*H_k'*inv(H_k*P_k_m*H_k'+R_k)*(z_k-H_k*x_k_m); %update estimate with measurement
     P_k_p = inv(inv(P_k_m)+H_k'*inv(R_k)*H_k); %update covariance         eye(2);%
     
