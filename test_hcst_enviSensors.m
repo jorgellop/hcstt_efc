@@ -5,7 +5,7 @@
 % Grady Morrissey - July 10, 2019
 
 
-numtry = 500;
+numtry = 100;
 for II=1:numtry
     %get sensor data
     data = hcst_getEnviData();
